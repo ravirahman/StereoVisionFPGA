@@ -10,7 +10,7 @@ leftI = mean(left, 3);
 rightI = mean(right, 3);
 %rightI = right;
 
-coordinates = [418, 782; 690, 387; 880, 180];
+coordinates = [418, 782; 690, 387; 880, 180; 1000, 842];
 [r, num_squares] = size(coordinates);
 half_N = 2; % half window size (window size = half_N*2+1)
 N = 2*half_N+1;
