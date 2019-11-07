@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/cpp",
+                "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal",
+                "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/lib"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
