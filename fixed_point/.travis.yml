@@ -1,0 +1,43 @@
+language: cpp
+script:
+  - export CC=${TRAVIS_COMPILER}
+  - export CXX=${TRAVIS_COMPILER}
+  - ./ci_build.sh
+# The below matrix is utilized to use modern compilers.
+# Source: http://genbattle.bitbucket.org/blog/2016/01/17/c++-travis-ci/
+matrix:
+  include:
+    - compiler: g++-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+            - ninja-build
+    - compiler: g++-5
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+            - ninja-build
+    - compiler: clang++-3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - ninja-build
+    - compiler: clang++-3.7
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.7
+          packages:
+            - clang-3.7
+            - ninja-build

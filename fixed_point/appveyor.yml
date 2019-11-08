@@ -1,0 +1,15 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+configuration:
+- Debug
+- Release
+build_script:
+- cmd: ci_build.bat
+    
+    
+    
+    
+    
+    
+    
+    

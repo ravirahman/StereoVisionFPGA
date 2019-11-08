@@ -5,7 +5,9 @@
             "includePath": [
                 "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/cpp",
                 "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal",
-                "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/lib"
+                "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/lib",
+                "${workspaceFolder}/fixed_point/include",
+                "${workspaceFolder}/easyBMP"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
