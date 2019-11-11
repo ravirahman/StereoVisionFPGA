@@ -2,22 +2,26 @@ clear all
 close all
 
 % Load the stereo images.
-left = imread('Images/Art/view1.png');
-right = imread('Images/Art/view5.png');
+%left = imread('Images/Art/view1.png');
+%right = imread('Images/Art/view5.png');
+tic()
+left = imread('0_left.bmp');
+right = imread('0_right.bmp');
 
-leftI = mean(left, 3);
-%leftI = left;
-rightI = mean(right, 3);
-%rightI = right;
+%leftI = mean(left, 3);
+leftI = left;
+%rightI = mean(right, 3);
+rightI = right;
 
-coordinates = [418, 782; 690, 387; 880, 180; 1000, 842];
+coordinates = csvread('images.csv', 1, 0);
+coordinates = coordinates(4:end,2:end);
+
 [r, num_squares] = size(coordinates);
 half_N = 2; % half window size (window size = half_N*2+1)
 N = 2*half_N+1;
 
 % perform the block matching
-tic()
-match_coordinates = perform_block_matching(leftI, rightI, coordinates);
+[match_coordinates, real_ds] = perform_block_matching(leftI, rightI, coordinates);
 elapsed = toc()
 
 % Visulize the results
@@ -29,10 +33,10 @@ imshow(left)
 %image(leftI)
 hold on
 % Plot a rectangle for each block we have to match
-colors = [0, 0, 0; 1, 0, 0; 0, 1, 0; 0, 0, 1]; % Array of colors
+colors = [1, 0, 0; 1, 0, 0; 0, 1, 0; 0, 0, 1]; % Array of colors
 for i = 1:r
     rectangle('Position',[coordinates(i,1)-N/2 ,coordinates(i,2)-N/2, N, N],...
-         'LineWidth',3,'LineStyle','--', 'EdgeColor', colors(i,:))
+         'LineWidth',3,'LineStyle','--', 'EdgeColor', colors(1,:))
 end   
 
 subplot(1,2,2)
@@ -43,8 +47,11 @@ hold on
 % Plot a rectangle where we found the matching
 for i = 1:r
     rectangle('Position',[match_coordinates(i,1)-N/2, match_coordinates(i,2)-N/2, N, N],...
-         'LineWidth',3,'LineStyle','--', 'EdgeColor', colors(i,:))
+         'LineWidth',3,'LineStyle','--', 'EdgeColor', colors(1,:))
 end   
+
+
+real_ds;
 
 % -----------------------------------------------------------------------
 
@@ -59,7 +66,7 @@ end
 % For now, no subpixel accuray (probably not needed because it will make
 % the hardware complex)
 
-function right_coords = perform_block_matching(img_left, img_right, left_coords)
+function [right_coords, real_distances] = perform_block_matching(img_left, img_right, left_coords)
 
 % ----------------------------------------------------------------
 % Parameters
@@ -74,18 +81,18 @@ function right_coords = perform_block_matching(img_left, img_right, left_coords)
 % ----------------------------------------------------------------
 
 % Design choices
-half_N = 2; % Window size = 2*half_N+1
+half_N = 4; % Window size = 2*half_N+1
 N = 2*half_N; % Window size (x and y)
-search_range = 200; % how many pixels away from the block's location
+search_range = 50; % how many pixels away from the block's location
    % in the left image to search for a matching block in the right image
-unidir_search = 1; % If True, search is unidrectional (only to the left)
+unidir_search = 0; % If True, search is unidrectional (only to the left)
                    % If False, search is bidirectional (left and right)
-
 
 % ----------------------------------------------------------------
 [r, foo] = size(left_coords);
 
 right_coords = left_coords*0;
+real_distances = zeros(1,r); 
 
 % Iterate over each block to match
 for i = 1:r
@@ -130,19 +137,29 @@ for i = 1:r
     % Now we have all the scores. Need to find the highest one
     [~, index] = min(block_scores);
     right_coords(i,:) = [x+displacements(index), y];
+    real_distances(i) = calculate_distance(-displacements(index));
     
 end
 
 
 
 end
-
-
 
 % Calculates the score between the two specified blocks
 function score = calculate_score(block1, block2)
 
     % Simple SAD (Sum of Absolute Differences)
-    score = sum(sum(sum(abs(block1 - block2))));
+    score = sum(sum(sum(abs(int16(block1) - int16(block2)))));
     
+end
+
+% Calculates the real distance from the block distance
+function real_d = calculate_distance(pixel_d)
+
+f = 12e-3; % Focal length
+T = 100e-3; % Distance between cameras
+pixel_distance = 8.93e-6; % distance between pixels
+
+real_d = f*T/(pixel_d*pixel_distance);
+
 end
