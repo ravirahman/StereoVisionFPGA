@@ -12,8 +12,9 @@
 #include "LoadRefBlock.hpp"
 #include "UpdateScore.hpp"
 #include "TransformCoordinates.hpp"
+#include "TransformCoordinatesNoop.hpp"
 
-template<size_t M, size_t numBlocks, size_t fpbf>
+template<long M, offset_t halfOffsetRange, long fpbf>
 class StereoVisionSinglePoint: public Server<point_t, point_3d_t<fp32_t<2*fpbf>>> {
     public:
         StereoVisionSinglePoint(const BMP& ref_img, const BMP& comp_img, const ufp16_t<fpbf> cameraDistanace, const ufp16_t<fpbf> focalLength, const ufp16_t<fpbf> pixelPitch);
@@ -21,32 +22,34 @@ class StereoVisionSinglePoint: public Server<point_t, point_3d_t<fp32_t<2*fpbf>>
         point_3d_t<fp32_t<2*fpbf>> GetResult() const override;
     private:
         LoadRefBlock<M> _loadRefBlock;
-        LoadCompBlocksToCache<M, numBlocks> _loadCompBlocksToCache;
-        LoadCompBlock<M, numBlocks> _loadCompBlock;
+        LoadCompBlocksToCache<M, halfOffsetRange> _loadCompBlocksToCache;
+        LoadCompBlock<M, halfOffsetRange> _loadCompBlock;
         ComputeScore<M> _computeScore;
         UpdateScore _updateScore;
-        TransformCoordinates<fpbf> _transformCoordinates;
+        // TransformCoordinates<fpbf> _transformCoordinates;
+        TransformCoordinatesNoop<fpbf> _transformCoordinates;
         
         point_3d_t<fp32_t<2*fpbf>> _result;
         bool _pointSet;
 };
 
-template<size_t M, size_t numBlocks, size_t fpbf>
-StereoVisionSinglePoint<M, numBlocks, fpbf>::StereoVisionSinglePoint(const BMP& ref_img, const BMP& comp_img, const ufp16_t<fpbf> cameraDistanace, const ufp16_t<fpbf> focalLength, const ufp16_t<fpbf> pixelPitch)
+template<long M, offset_t halfOffsetRange, long fpbf>
+StereoVisionSinglePoint<M, halfOffsetRange, fpbf>::StereoVisionSinglePoint(const BMP& ref_img, const BMP& comp_img, const ufp16_t<fpbf> cameraDistanace, const ufp16_t<fpbf> focalLength, const ufp16_t<fpbf> pixelPitch)
     : _loadRefBlock(ref_img)
     , _loadCompBlocksToCache(comp_img)
-    , _loadCompBlock(LoadCompBlock<M, numBlocks>())
+    , _loadCompBlock(LoadCompBlock<M, halfOffsetRange>())
     , _computeScore(ComputeScore<M>())
     , _updateScore(UpdateScore())
-    , _transformCoordinates(TransformCoordinates<fpbf>(cameraDistanace, focalLength, pixelPitch))
+    // , _transformCoordinates(TransformCoordinates<fpbf>(cameraDistanace, focalLength, pixelPitch))
+    , _transformCoordinates(TransformCoordinatesNoop<fpbf>())
     , _pointSet(false) {
 }
 
-template<size_t M, size_t numBlocks, size_t fpbf>
-void StereoVisionSinglePoint<M, numBlocks,  fpbf>::Put(const point_t in) {
+template<long M, offset_t halfOffsetRange, long fpbf>
+void StereoVisionSinglePoint<M, halfOffsetRange,  fpbf>::Put(const point_t in) {
     _loadRefBlock.Put(in);
     _loadCompBlocksToCache.Put(in);
-    for (size_t i = 0; i < numBlocks; i++) {
+    for (offset_t i = -halfOffsetRange; i <= halfOffsetRange + 1 - M; i++) {
         _loadCompBlock.Put({_loadCompBlocksToCache.GetResult(), i});
         _computeScore.Put({_loadRefBlock.GetResult(), _loadCompBlock.GetResult()});
         _updateScore.Put({_computeScore.GetResult(), i});
@@ -56,8 +59,8 @@ void StereoVisionSinglePoint<M, numBlocks,  fpbf>::Put(const point_t in) {
     _pointSet = true;
 }
 
-template<size_t M, size_t numBlocks, size_t fpbf>
-point_3d_t<fp32_t<2*fpbf>> StereoVisionSinglePoint<M, numBlocks, fpbf>::GetResult() const {
+template<long M, offset_t halfOffsetRange, long fpbf>
+point_3d_t<fp32_t<2*fpbf>> StereoVisionSinglePoint<M, halfOffsetRange, fpbf>::GetResult() const {
     if (!_pointSet) {
         fprintf(stderr, "Cannot call GetScore() before PutPoint() in StereoVisionSinglePoint\n");
         exit(1);

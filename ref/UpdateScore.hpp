@@ -24,7 +24,7 @@ UpdateScore::UpdateScore()
 }
 
 void UpdateScore::Put(const score_offset_t in) {
-    if (!_hasScore || in.score < _bestScore.score) {
+    if (!_hasScore || in.score < _bestScore.score || in.offset < _bestScore.offset) {
         _bestScore = in;
     }
     _hasScore = true;

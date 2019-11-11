@@ -1,13 +1,14 @@
 CC=g++
 # You can add -Werr to clang to force all warnings to turn into errors
-CFLAGS=-std=c++11 -flto -g -Wall -Werror -Wpedantic -I../easyBMP/ -I../fixed_point/include/ -Wno-error=unused-variable
+CFLAGS=-std=c++11 -flto -g -Wall -Werror -Wpedantic -I../easyBMP/ -I../fixed_point/include/ -Wno-error=unused-variable 
 LDFLAGS=-lm -flto -g
 # Macros defined by the user or OpenTuner
 PARAMS :=
 
 # Blank line ends list.
 ifeq ($(DEBUG),1)
-  CFLAGS += -DDEBUG -O0
+  CFLAGS += -DDEBUG -O0 -fsanitize=undefined
+  LDFLAGS += -fsanitize=undefined
 else
   CFLAGS += -DNDEBUG -O3
 endif
@@ -25,15 +26,6 @@ stereo: stereo.o
 # # pattern rule for building objects
 stereo.o:
 	$(CC) $(PARAMS) $(CFLAGS) -c stereo.cpp -o stereo.o
-
-
-# # run each of the targets
-# run: $(TARGETS)
-# 	for X in $(TARGETS) ; do \
-# 		echo $$X -v ; \
-# 		./$$X -v ; \
-# 		echo ; \
-# 	done
 
 partial_clean::
 	$(RM) -R $(TARGETS) $(OBJS) $(MDRIVER_OBJS) $(ALLOCATOR_TEST_OBJS) *.std* *.pyc
