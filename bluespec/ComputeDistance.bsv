@@ -3,43 +3,31 @@
 
 import FIFO::*;
 import FixedPoint::*;
-import Types::*;
+import ClientServer::*;
+import GetPut::*;
 
+typedef Server#(
+	UInt#(pb),
+	FixedPoint#(fpbi, fpbf)
+) ComputeDistance#(numeric type pb, numeric type fpbi, numeric type fpbf);
 
-interface ComputeDistance;
-	method Action putPixelDistance (UInt#(PB) distance);
-        method ActionValue#(FixedPoint#(FPBI, FPBF)) getRealDistance;
-endinterface
+module mkComputeDistance(FixedPoint#(fpbi, fpbf) real_world_cte, ComputeDistance#(pb, fpbi, fpbf) ifc)
+	provisos(
+		Add#(TAdd#(pb, 1), a__, fpbi)
+	);
 
-
-module mkComputeDistance(ComputeDistance);
-
-	FIFO#(UInt#(PB)) pixelDistances <- mkFIFO();
-        FIFO#(FixedPoint#(FPBI, FPBF)) realDistances <- mkFIFO();
-
+	FIFO#(UInt#(pb)) pixelDistances <- mkFIFO();
+	FIFO#(FixedPoint#(fpbi, fpbf)) realDistances <- mkFIFO();
 
 	rule compute (True);
-
 		let pixelDist = pixelDistances.first();
 		pixelDistances.deq();
 		
-		FixedPoint#(FPBI, FPBF) fxptPixelDist = fromUInt(pixelDist);
-		FixedPoint#(FPBI, FPBF) realDist =  real_world_cte/fxptPixelDist;
+		FixedPoint#(fpbi, fpbf) fxptPixelDist = fromUInt(pixelDist);
+		FixedPoint#(fpbi, fpbf) realDist =  real_world_cte/fxptPixelDist;
 		realDistances.enq(realDist);	
-				
 	endrule
 
-
-	method Action putPixelDistance( UInt#(PB) distance);
-	
-		pixelDistances.enq(distance);
-	
-	endmethod	
-
-	method ActionValue#(FixedPoint#(FPBI, FPBF)) getRealDistance();
-	
-		realDistances.deq();
-		return realDistances.first();
-
-	endmethod
+	interface Put request = toPut(pixelDistances);
+	interface Get response = toGet(realDistances);
 endmodule

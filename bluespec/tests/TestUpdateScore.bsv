@@ -3,12 +3,19 @@
 import UpdateScore::*;
 import Types::*;
 import Vector::*;
+import GetPut::*;
+import ComputeScore::*;
+import Pixel::*;
+
 
 Int#(4) num_distances_lim = 3;
 
+typedef ScoreT#(NPIXELS, PD, PIXELWIDTH) MyScoreT;
+typedef Vector#(TMul#(NPIXELS, NPIXELS), Pixel#(PD, PIXELWIDTH)) BlockT;
+
 module mkTest();
 
-	UpdateScore#(SB, PB) us <- mkUpdateScore();
+	UpdateScore#(PB, NPIXELS, PD, PIXELWIDTH) us <- mkUpdateScore();
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
@@ -16,13 +23,16 @@ module mkTest();
 	Reg#(Bool) all_fed <- mkReg(False);
 	Reg#(Bit#(4)) check <- mkReg(0);
 
-	function Action dofeed(UInt#(SB) score, UInt#(PB) distance);
-		action
+	function Action dofeed(MyScoreT score, UInt#(PB) distance);
+        action
+            ScoreDistanceT#(PB, NPIXELS, PD, PIXELWIDTH) sd = ?;
+            sd.score = score;
+            sd.distance = distance;
 			if (feed_counter < num_distances_lim) begin
-				feed_counter <= feed_counter + 1;
-				us.putScore(score, distance);
+                feed_counter <= feed_counter + 1;
+				us.request.put(sd);
 			end else begin
-				us.putScore(score, distance);
+				us.request.put(sd);
 				all_fed <= True;
 				feed <= feed + 1;
 			end
@@ -31,7 +41,7 @@ module mkTest();
 
 	function Action docheck(UInt#(PB) expDist);
 		action
-			let bestDistance <- us.getBestDistance();
+			let bestDistance <- us.response.get();
 			us.restart();
 			all_fed <= False;
 			feed_counter <= 0;
@@ -62,19 +72,19 @@ module mkTest();
     dist3[2] = 2;
     dist3[3] = 3;
 
-    Vector#(4, UInt#(SB)) scores1 = newVector();
+    Vector#(4, MyScoreT) scores1 = newVector();
     scores1[0] = 20;
     scores1[1] = 45;
     scores1[2] = 3;
     scores1[3] = 17;
 
-    Vector#(4, UInt#(SB)) scores2 = newVector();
+    Vector#(4, MyScoreT) scores2 = newVector();
     scores2[0] = 45;
     scores2[1] = 5;
     scores2[2] = 10;
     scores2[3] = 78;
 
-    Vector#(4, UInt#(SB)) scores3 = newVector();
+    Vector#(4, MyScoreT) scores3 = newVector();
     scores3[0] = 1;
     scores3[1] = 25;
     scores3[2] = 12;
