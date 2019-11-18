@@ -33,5 +33,3 @@ FixedPoint#(FPBI, FPBF) real_world_cte = 134.3785;
 
 // Search area in pixels
 typedef 3 SEARCHAREA;
-
-UInt#(PB) searchAreaUInt = 3;

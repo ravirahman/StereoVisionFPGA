@@ -113,8 +113,6 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     // Your design
     /////////////////////////
 
-    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
-
     /////////////////////////
     // DRAM instantitation: ddr3_user (Does not need to be reset, just overwrite new data)
     /////////////////////////
@@ -137,6 +135,9 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     //     communicate with ddr3_ctrl_200mhz module
     DDR3_6375User ddr3_user <- mkDDR3WrapperSync(ddr3_ctrl_200mhz.user);
 `endif
+
+    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
+
 
 
     // DDR3_6375User definition in DDR3User.bsv

@@ -11,7 +11,7 @@ import ComputeScore::*;
 typedef struct {
 	ScoreT#(npixelst, pd, pixelWidth) score;
 	UInt#(pb) distance;
-} ScoreDistanceT#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
+} ScoreDistanceT#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
 
 interface UpdateScore#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);

@@ -11,7 +11,6 @@ import DDR3Controller::*;
 import DDR3Sim::*;
 import DDR3User::*;
 import XYPoint::*;
-import HostInterface::*;
 import DDR3Controller::*;
 
 interface Top_Pins;
@@ -81,10 +80,4 @@ module mkTest();
         end
         $finish();
     endrule
-
-    interface Top_Pins pins;
-        interface DDR3_Pins_VC707_1GB pins_ddr3 =  ddr3_ctrl_200mhz.ddr3;
-    endinterface
-
-
 endmodule

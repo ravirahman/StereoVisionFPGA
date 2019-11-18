@@ -19,7 +19,7 @@ typedef Server#(
 module mkStereoVisionMultiplePoints(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionMultiplePoints#(imageWidth, n, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
-		, Add#(b__, TAdd#(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))), 1), pb)
+		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 		, Add#(c__, pb, 26)
 		, Add#(TAdd#(pb, 1), d__, fpbi)
 	);

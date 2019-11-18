@@ -16,8 +16,8 @@ verilog: $(file)
 	mkdir -p bscdir
 	bsc -u -verilog -elab -vdir $(build_dir) -bdir $(build_dir) -info-dir $(build_dir) $(bscflags) -p +:$(bsvdir) -g $(module) $(file)
 
-synth: $(file) 
-	synth $(file) $(module) -p ./ -l multisize
+synth: Synth.bsv 
+	synth Synth.bsv $(module) -p +:$(bsvdir) -l multisize
 
 clean:
 	rm bscdir out out.so -rf

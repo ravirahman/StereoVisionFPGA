@@ -12,12 +12,7 @@ import ComputeDistance::*;
 import GetPut::*;
 import UpdateScore::*;
 import LoadBlocks::*;
-import DDR3Common::*;
-import DDR3Controller::*;
-import DDR3Sim::*;
 import DDR3User::*;
-import DefaultValue::*;
-import FShow::*;
 
 // Connectal HW-SW can use a struct type
 // However, the components must have a type of Bit#(n)
@@ -44,7 +39,7 @@ typedef Server#(
 module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(imageWidth, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
-		, Add#(b__, TAdd#(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))), 1), pb)
+		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 		, Add#(c__, pb, 26)
 		, Add#(TAdd#(pb, 1), d__, fpbi)
 	);
@@ -71,8 +66,8 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 	Reg#(Bool) referenceBlockStored <- mkReg(False); 
 
 	// Modules that make the different operations
-    LoadBlock#(imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlock(ddr3_user);
-	LoadBlock#(imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlock(ddr3_user);
+    LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
 	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
 	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(real_world_cte);
 	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();	

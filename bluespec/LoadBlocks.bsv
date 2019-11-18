@@ -1,6 +1,3 @@
-// This file contains the interface and implementation of the blocks that load image blocks given the center coordinates,
-// both for the reference and the compare images.
-
 import Vector::*;
 import FIFO::*;
 import ClientServer::*;
@@ -10,96 +7,104 @@ import Pixel::*;
 import DDR3User::*;
 import Assert::*;
 
-typedef TDiv#(DDR3_Line_Size, SizeOf#(Pixel#(pd, pixelWidth))) PixelsPerLineT#(numeric type pd, numeric type pixelWidth);
-typedef UInt#(TAdd#(TLog#(PixelsPerLineT#(pd, pixelWidth)), 1)) OffsetT#(numeric type pd, numeric type pixelWidth);  // adding 1 extra bit just to be safe
-
-
-typedef struct {
-	DDR3_Addr line_addr; // the dram line where the data is stored
-	OffsetT#(pd, pixelWidth) offset;  // the offset in the dram line where the data begins
-} DRAMLocation#(numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
-
+typedef TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)) NumPixelsPerLine#(numeric type pd, numeric type pixelWidth);
 
 typedef Server#(
 	XYPoint#(pb),
 	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))
-) LoadBlock#(numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
+) LoadBlocks#(numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
-module mkLoadBlock(DDR3_6375User ddr3_user, LoadBlock#(imageWidth, pb, npixelst, pd, pixelWidth) ifc)
+module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) ifc)
 	provisos(
 		Add#(a__, pb, DDR3_Addr_Size)
-		, Add#(b__, TAdd#(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))), 1), pb)
+		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 	);
 	// staticAssert(valueOf(TExp#(TLog#(SizeOf#(Pixel#(pd, pixelWidth))))) == valueOf(SizeOf#(Pixel#(pd, pixelWidth))), "SizeOf#(Pixel#(pd, pixelWidth)) must be an exact power of two");
 	FIFO#(XYPoint#(pb)) inFIFO <- mkFIFO();
 	FIFO#(XYPoint#(pb)) poiFIFO <- mkFIFO();
-	
 
-	Vector#(TMul#(npixelst, npixelst), Reg#(Pixel#(pd, pixelWidth))) blockReg <- replicateM(mkRegU());
-	Reg#(OffsetT#(pd, pixelWidth)) blockPixelI <- mkReg(0); // records the index of the to-be-filled next pixel
+	Reg#(UInt#(pb)) currentReqDx <- mkReg(0);
+	Reg#(UInt#(pb)) currentReqDy <- mkReg(0);
+
+	Maybe#(Pixel#(pd, pixelWidth)) invalidPixel = tagged Invalid;
+	
+	Vector#(TMul#(npixelst, npixelst), Reg#(Maybe#(Pixel#(pd, pixelWidth)))) blockReg <- replicateM(mkReg(invalidPixel));
 
 	FIFO#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) outFIFO <- mkFIFO();
 
-	function DRAMLocation#(pd, pixelWidth) getDRAMLocationFromXYPoint(XYPoint#(pb) point);
+	function DDR3_Addr getDDR3AddrFromXYPoint(XYPoint#(pb) point);
 		let rowMajorLoc = point.y * fromInteger(valueOf(imageWidth)) + point.x;
-		let dramRow = pack(rowMajorLoc) >> fromInteger(valueOf(TLog#(PixelsPerLineT#(pd, pixelWidth))));
-		DRAMLocation#(pd, pixelWidth) loc;
-		loc.line_addr = zeroExtend(dramRow);  // division
-		OffsetT#(pd, pixelWidth) offset = truncate(rowMajorLoc >> fromInteger(valueOf(TSub#(DDR3_Line_Size, TLog#(PixelsPerLineT#(pd, pixelWidth)))))); // modulo
-		loc.offset = offset;
-		return loc;
+		let dramRow = pack(rowMajorLoc) >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))));  // division
+		return zeroExtend(dramRow);
+	endfunction
+
+	function XYPoint#(pb) getXYPointFromDDR3Addr(DDR3_Addr addr);
+		let locInPixelRowMajor = unpack(addr << fromInteger(valueOf(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))))));
+		XYPoint#(pb) p;
+		p.y = truncate(locInPixelRowMajor / fromInteger(valueOf(imageWidth)));
+		p.x = truncate(locInPixelRowMajor % fromInteger(valueOf(imageWidth)));
+		return p;
+	endfunction
+
+	function Bool areAllValid();
+		Bool allValid = True;
+		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
+			if (!isValid(blockReg[i])) begin
+				allValid = False;
+			end
+		end
+		return allValid;
 	endfunction
 
 	rule requestFromDRAM (True);
 		let xy = inFIFO.first();
-		inFIFO.deq();
-		poiFIFO.enq(xy);
-		for (Integer r = 0; r < valueOf(npixelst); r = r+1) begin
-			for (Integer blockNum = 0; blockNum < valueOf(TAdd#(TDiv#(npixelst, PixelsPerLineT#(pd, pixelWidth)), 1)); blockNum = blockNum + 1) begin  // TODO do we need the extra +1?
-				XYPoint#(pb) poi;
-				poi.x = xy.x + fromInteger(r);
-				poi.y = xy.y + fromInteger(blockNum * valueOf(PixelsPerLineT#(pd, pixelWidth)));
-				DRAMLocation#(pd, pixelWidth) location = getDRAMLocationFromXYPoint(poi);
-				let req = DDR3_LineReq{ write: False, line_addr: truncate(location.line_addr), data_in: 0};
-				ddr3_user.request.put(req); // TODO
+		if (currentReqDx == 0 && currentReqDy == 0) begin
+			poiFIFO.enq(xy);
+		end
+		XYPoint#(pb) poi;
+		poi.x = xy.x + currentReqDx;
+		poi.y = xy.y + currentReqDy;
+		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
+		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
+		ddr3_user.request.put(req);
+		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
+			currentReqDx <= currentReqDx + fromInteger(valueOf(NumPixelsPerLine#(pd, pixelWidth)));
+		end else if (currentReqDy + 1 < fromInteger(valueOf(npixelst))) begin
+			currentReqDx <= 0;
+			currentReqDy <= currentReqDy + 1;
+		end else begin
+			inFIFO.deq();
+			currentReqDx <= 0;
+			currentReqDy <= 0;
+		end
+	endrule
+
+	rule responseFromDRAM (!areAllValid());
+		let poi = poiFIFO.first();
+		let resp <- ddr3_user.response.get();
+		let drampoint = getXYPointFromDDR3Addr(resp.line_addr);
+		Integer j = 0;
+		for (Integer i = 0; i < valueOf(NumPixelsPerLine#(pd, pixelWidth)); i = i + 1) begin
+			// do we want this pixel?
+			if (poi.x <= drampoint.x + fromInteger(i) && drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst)) && drampoint.y <= poi.y && drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
+				let startI = i * valueOf(TMul#(pd, pixelWidth));
+				let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+				let pixelAsBytes = resp.data_out[endI:startI];
+				Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
+				let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
+				blockReg[blockPixelI] <= tagged Valid pixel;
 			end
 		end
 	endrule
 
-	rule responseFromDRAM (True);
-		let poi = poiFIFO.first();
-		DRAMLocation#(pd, pixelWidth) dramLocation = getDRAMLocationFromXYPoint(poi);
-		XYPoint#(pb) next_point;
-		next_point.x = poi.x + zeroExtend(blockPixelI % fromInteger(valueOf(npixelst)));
-		next_point.y = poi.y + zeroExtend(blockPixelI / fromInteger(valueOf(npixelst)));
-		DRAMLocation#(pd, pixelWidth) ramloc = getDRAMLocationFromXYPoint(next_point);
-		let resp <- ddr3_user.response.get();
-		if (ramloc.line_addr == resp.line_addr) begin
-			Integer j = 0;
-			for (OffsetT#(pd, pixelWidth) i = 0; 
-				i < fromInteger(valueOf(PixelsPerLineT#(pd, pixelWidth))) - ramloc.offset // didn't exceed the dram line
-				&& blockPixelI + fromInteger(j) < fromInteger(valueOf(TMul#(npixelst, npixelst)))  // didn't exceed the block size
-				&& ((j == 0) || ((blockPixelI + fromInteger(j)) % fromInteger(valueOf(npixelst)) != 0));  // didn't exceed the line
-				i = i +1) begin
-					let startI = i << fromInteger(valueOf(PixelsPerLineT#(pd, pixelWidth)));
-					let endI = startI + fromInteger(valueOf(SizeOf#(Pixel#(pd, pixelWidth))));
-					let pixelAsBytes = resp.data_out[startI:endI];
-					Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
-					blockReg[blockPixelI + fromInteger(j)] <= pixel;
-				j = j+1;
-			end
-
-			if (blockPixelI + fromInteger(j) == fromInteger(valueOf(npixelst))) begin
-				Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
-				for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
-					answer[i] = blockReg[i];
-				end
-				outFIFO.enq(answer);
-				poiFIFO.deq();
-			end
-
-			blockPixelI <= (fromInteger(j) + blockPixelI) % fromInteger(valueOf(npixelst));
+	rule finishProcessing (areAllValid());
+		Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
+		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
+			answer[i] = fromMaybe(replicate(0), blockReg[i]);
+			blockReg[i] <= tagged Invalid;
 		end
+		outFIFO.enq(answer);
+		poiFIFO.deq();
 	endrule
 
 	interface Put request = toPut(inFIFO);
