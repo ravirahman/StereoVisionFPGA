@@ -9,6 +9,16 @@ import FShow::*;
 import FixedPoint::*;
 import Types::*;
 import StereoVisionMultiplePoints::*;
+import Types::*;
+import StereoVisionSinglePoint::*;
+import ClientServer::*;
+import GetPut::*;
+import Pixel::*;
+import XYPoint::*;
+import UpdateScore::*;
+import LoadBlocks::*;
+import ComputeScore::*;
+import ComputeDistance::*;
 
 // Connectal
 import Top_Pins::*;
@@ -103,7 +113,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     // Your design
     /////////////////////////
 
-    StereoVisionMultiplePoints svmp <- mkStereoVisionMultiplePoints();
+    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
 
     /////////////////////////
     // DRAM instantitation: ddr3_user (Does not need to be reset, just overwrite new data)

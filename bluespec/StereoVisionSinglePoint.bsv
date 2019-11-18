@@ -8,6 +8,7 @@ import XYPoint::*;
 import Pixel::*;
 import ComputeScore::*;
 import ClientServer::*;
+import ComputeDistance::*;
 import GetPut::*;
 import UpdateScore::*;
 import LoadBlocks::*;

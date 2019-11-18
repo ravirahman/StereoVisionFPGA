@@ -35,8 +35,8 @@ module mkLoadBlock(DDR3_6375User ddr3_user, LoadBlock#(imageWidth, pb, npixelst,
 	FIFO#(XYPoint#(pb)) poiFIFO <- mkFIFO();
 	
 
-	// Vector#(TMul#(npixelst, npixelst), Reg#(Pixel#(pd, pixelWidth))) blockReg <- replicateM(mkRegU());
-	// Reg#(OffsetT#(pd, pixelWidth)) blockPixelI <- mkReg(0); // records the index of the to-be-filled next pixel
+	Vector#(TMul#(npixelst, npixelst), Reg#(Pixel#(pd, pixelWidth))) blockReg <- replicateM(mkRegU());
+	Reg#(OffsetT#(pd, pixelWidth)) blockPixelI <- mkReg(0); // records the index of the to-be-filled next pixel
 
 	FIFO#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) outFIFO <- mkFIFO();
 

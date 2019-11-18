@@ -1,6 +1,6 @@
 BASEDIR=$(abspath .)
 CONNECTALDIR=/mit/6.375/lab2019f/connectal
-DDR3_DIR=./ddr_example/ddr3_6375
+DDR3_DIR=../bluespec/ddr3_6375
 BLUESPEC_DIR=$(CONNECTALDIR)/tests/spi/:../bluespec:$(DDR3_DIR):$(CONNECTALDIR)/bsv
 
 # Define HW->SW / SW->HW interfaces

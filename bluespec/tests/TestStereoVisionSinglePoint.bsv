@@ -19,15 +19,6 @@ interface Top_Pins;
 endinterface
 
 module mkTest();
-    Reg#(Bool) isResetting <- mkReg(False);
-    Reg#(Bit#(2)) resetCnt <- mkReg(0);
-    Clock connectal_clk <- exposeCurrentClock;
-    MakeResetIfc my_rst <- mkReset(1, True, connectal_clk); // inherits parent's reset (hidden) and introduce extra reset method (OR condition)\
-    rule clearResetting if (isResetting);
-        resetCnt <= resetCnt + 1;
-        if (resetCnt == 3) isResetting <= False;
-    endrule
-
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);

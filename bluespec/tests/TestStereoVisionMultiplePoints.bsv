@@ -5,24 +5,38 @@ import Types::*;
 import FixedPoint::*;
 import FShow::*;
 import Vector::*;
+import XYPoint::*;
+import ClientServer::*;
+import GetPut::*;
+import DDR3Common::*;
+import DDR3Controller::*;
+import DDR3Sim::*;
+import DDR3User::*;
+import DefaultValue::*;
+import FShow::*;
 
 module mkTest();
 
-	StereoVisionMultiplePoints svmp <- mkStereoVisionMultiplePoints();
+    let ddr3_ctrl <- mkDDR3Simulator;
+    // We are using wrapper for easy use
+    DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
+
+	StereoVisionMultiplePoints#(IMAGEWIDTH, N, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, real_world_cte);
+
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
 	Reg#(Bit#(4)) check <- mkReg(0);
 
-	function Action dofeed(Vector#(N, UInt#(PB)) xs, Vector#(N, UInt#(PB)) ys);
+	function Action dofeed(Vector#(N, XYPoint#(PB)) points);
 		action
 			feed <= feed + 1;
-			svmp.putImagePoints(xs, ys);
+			svmp.request.put(points);
 		endaction
 	endfunction
 
 	function Action docheck(Vector#(N, FixedPoint#(FPBI, FPBF)) expDist);
 		action
-			let compDistance <- svmp.getDistances();
+			let compDistance <- svmp.response.get();
 			for (Integer i = 0; i < valueOf(N); i = i + 1) begin
 				if (compDistance[i] != expDist[i]) begin
 					$display("Wanted: ", fshow(expDist[i]));
@@ -34,25 +48,21 @@ module mkTest();
 		endaction
 	endfunction
 
-    UInt#(PB) x1 = 10;
-    UInt#(PB) x2 = 10;
-    UInt#(PB) x3 = 10;
-	
-    UInt#(PB) y1 = 0;
-    UInt#(PB) y2 = 1;
-    UInt#(PB) y3 = 2;
+    XYPoint#(PB) p1;
+    p1.x = 10;
+    p1.y = 0;
 
-    Vector#(N, UInt#(PB)) xs = newVector();
-    xs[0] = x1;
-    xs[1] = x2;
-    //xs[2] = x3;
-    //xs[3] = x3;
+    XYPoint#(PB) p2;
+    p2.x = 10;
+    p2.y = 1;
 
-    Vector#(N, UInt#(PB)) ys = newVector();
-    ys[0] = y1;
-    ys[1] = y2;
-    //ys[2] = y3;
-    //ys[3] = y3;
+    XYPoint#(PB) p3;
+    p3.x = 10;
+    p3.y = 2;
+
+    Vector#(N, XYPoint#(PB)) points = newVector();
+    points[0] = p1;
+    points[1] = p2;
 
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
     FixedPoint#(FPBI, FPBF) to2 = 2.45063;
@@ -64,9 +74,9 @@ module mkTest();
     //tos[2] = to3;
     //tos[3] = to3;
 
-    rule f0 (feed == 0); dofeed(xs, ys); endrule
-    rule f1 (feed == 1); dofeed(xs, ys); endrule
-    rule f2 (feed == 2); dofeed(xs, ys); endrule
+    rule f0 (feed == 0); dofeed(points); endrule
+    rule f1 (feed == 1); dofeed(points); endrule
+    rule f2 (feed == 2); dofeed(points); endrule
     
     rule c0 (check == 0); docheck(tos); endrule
     rule c1 (check == 1); docheck(tos); endrule

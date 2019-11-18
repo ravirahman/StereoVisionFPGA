@@ -38,9 +38,9 @@ module mkTest();
     UInt#(PB) dist2 = 55;
     UInt#(PB) dist3 = 20;
 
-    FixedPoint#(FPBI, FPBF) to1 = 13.43785;
-    FixedPoint#(FPBI, FPBF) to2 = 2.4433593750;
-    FixedPoint#(FPBI, FPBF) to3 = 6.7187500000;
+    FixedPoint#(FPBI, FPBF) to1 = 13.4378509521484375;
+    FixedPoint#(FPBI, FPBF) to2 = 2.4432373046875000;
+    FixedPoint#(FPBI, FPBF) to3 = 6.7189178466796875;
 
     rule f0 (feed == 0); dofeed(dist1); endrule
     rule f1 (feed == 1); dofeed(dist2); endrule

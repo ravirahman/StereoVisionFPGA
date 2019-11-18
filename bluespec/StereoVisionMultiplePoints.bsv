@@ -5,36 +5,46 @@ import Vector::*;
 import FixedPoint::*;
 import Types::*;
 import StereoVisionSinglePoint::*;
+import GetPut::*;
+import ClientServer::*;
+import XYPoint::*;
+import Pixel::*;
+import DDR3User::*;
 
+typedef Server#(
+	Vector#(n, XYPoint#(pb)),
+	Vector#(n, FixedPoint#(fpbi, fpbf))
+) StereoVisionMultiplePoints#(numeric type imageWidth, numeric type n, numeric type pb, numeric type searchAreaUInt, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-interface StereoVisionMultiplePoints;
-	method Action putImagePoints (Vector#(N, UInt#(PB)) xs, Vector#(N, UInt#(PB)) ys);
-        method ActionValue#(Vector#(N, FixedPoint#(FPBI, FPBF))) getDistances;
-endinterface
+module mkStereoVisionMultiplePoints(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionMultiplePoints#(imageWidth, n, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
+	provisos(
+		Add#(1, a__, TMul#(npixelst, npixelst))
+		, Add#(b__, TAdd#(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))), 1), pb)
+		, Add#(c__, pb, 26)
+		, Add#(TAdd#(pb, 1), d__, fpbi)
+	);
 
-
-module mkStereoVisionMultiplePoints(StereoVisionMultiplePoints);
-	
-	Vector#(N, StereoVisionSinglePoint) stereoVisionModules <- replicateM(mkStereoVisionSinglePoint());
+	Vector#(N, StereoVisionSinglePoint#(imageWidth, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf)) stereoVisionModules <- replicateM(mkStereoVisionSinglePoint(ddr3_user, real_world_cte));
 
 	// Interface methods
-	method Action putImagePoints (Vector#(N, UInt#(PB)) xs, Vector#(N, UInt#(PB)) ys);
-		for (Integer i = 0; i < valueOf(N); i = i+1) begin
-			stereoVisionModules[i].putImagePoint(xs[i], ys[i]);
-		end
-	endmethod
+	interface Put request;
+		method Action put(Vector#(n, XYPoint#(pb)) points);
+			for (Integer i = 0; i < valueOf(n); i = i+1) begin
+				stereoVisionModules[i].request.put(points[i]);
+			end
+		endmethod
+	endinterface
 
-        method ActionValue#(Vector#(N, FixedPoint#(FPBI, FPBF))) getDistances;
-		
-		Vector#(N, FixedPoint#(FPBI, FPBF)) dists = newVector;
-	
-		for (Integer i = 0; i < valueOf(N); i = i+1) begin
-			let distance <- stereoVisionModules[i].getDistance();
-			dists[i] = distance;
-		end
+	interface Get response;
+		method ActionValue#(Vector#(n, FixedPoint#(fpbi, fpbf))) get;
+			Vector#(n, FixedPoint#(fpbi, fpbf)) dists = newVector;
+			for (Integer i = 0; i < valueOf(n); i = i+1) begin
+				let distance <- stereoVisionModules[i].response.get();
+				dists[i] = distance;
+			end
 
-		return dists;
-	endmethod
-
+			return dists;
+		endmethod
+	endinterface
 
 endmodule
