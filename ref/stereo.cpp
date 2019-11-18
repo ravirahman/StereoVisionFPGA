@@ -22,9 +22,9 @@ namespace {
             exit(1);
         }
 
-        const size_t fpbf = 6;
-        const size_t M = 5;
-        const size_t numBlocks = 100;
+        const long fpbf = 6;
+        const long M = 9;
+        const offset_t halfOffsetRange = 25;
 
         typedef ufp16_t<fpbf> fp;
 
@@ -33,10 +33,15 @@ namespace {
         fp pixelPitch(1);
 
         std::vector<point_t> pointsOfInterest = {
-            {190, 25}
+            // {190, 25}
+            {119, 206},
+            {140, 205},
+            {124, 160},
+            {200, 180},
+            {544, 148}
         };
 
-        StereoVisionSinglePoint<M, numBlocks, fpbf> stereoVisionSinglePoint(left_img, right_img, cameraDistance, focalLength, pixelPitch);
+        StereoVisionSinglePoint<M, halfOffsetRange, fpbf> stereoVisionSinglePoint(left_img, right_img, cameraDistance, focalLength, pixelPitch);
         for (const point_t& poi : pointsOfInterest) {
             stereoVisionSinglePoint.Put(poi);
             const point_3d_t<fp32_t<2*fpbf>> result = stereoVisionSinglePoint.GetResult();

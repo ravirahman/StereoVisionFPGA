@@ -8,7 +8,7 @@
 #include "types.hpp"
 #include "Server.hpp"
 
-template <size_t fpbf>
+template <long fpbf>
 class TransformCoordinates : public Server<point_offset_t, point_3d_t<fp32_t<fpbf*2>>> {
     public:
         TransformCoordinates(const ufp16_t<fpbf> cameraDistance, const ufp16_t<fpbf> focalLength, const ufp16_t<fpbf> pixelPitch);
@@ -23,7 +23,7 @@ class TransformCoordinates : public Server<point_offset_t, point_3d_t<fp32_t<fpb
     
 };
 
-template <size_t fpbf>
+template <long fpbf>
 TransformCoordinates<fpbf>::TransformCoordinates(const ufp16_t<fpbf> cameraDistance, const ufp16_t<fpbf> focalLength, const ufp16_t<fpbf> pixelPitch)
     : _cameraDistance(cameraDistance)
     , _focalLength(focalLength)
@@ -31,10 +31,7 @@ TransformCoordinates<fpbf>::TransformCoordinates(const ufp16_t<fpbf> cameraDista
     , _hasResult(false) {
 }
 
-template <class T>
-struct show_type;
-
-template <size_t fpbf>
+template <long fpbf>
 void TransformCoordinates<fpbf>::Put(const point_offset_t in) {
     // const ufp16_t<0> x_fp(in.ref.x);
     // const ufp16_t<0> y_fp(in.ref.y);
@@ -50,7 +47,7 @@ void TransformCoordinates<fpbf>::Put(const point_offset_t in) {
     _hasResult = true;
 }
 
-template <size_t fpbf>
+template <long fpbf>
 point_3d_t<fp32_t<fpbf*2>> TransformCoordinates<fpbf>::GetResult() const {
     if (!_hasResult) {
         fprintf(stderr, "Cannot call TransformCoordinates::GetResult if there is no result to be retrieved\n");

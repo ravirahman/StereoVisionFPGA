@@ -10,30 +10,30 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
 
-typedef size_t score_t;
+typedef long score_t;
 
-typedef size_t offset_t;
+typedef long offset_t; // long since offset can be negative
 
 typedef std::array<uint8_t, 3> pixel_t;
 
 struct point_t {
-    uint16_t x;
-    uint16_t y;
+    int16_t x;
+    int16_t y;
 };
 
-template <size_t M>
+template <long M>
 using block_t = std::array<pixel_t,  M * M>;
 
-template <size_t M, size_t numBlocks>
-using blocks_cache_t = std::array<pixel_t, M * (M - 1 + numBlocks)>;
+template <long M, long halfOffsetRange>
+using blocks_cache_t = std::array<pixel_t, M * (1 + 2* halfOffsetRange)>;
 
-template <size_t M, size_t numBlocks>
+template <long M, long halfOffsetRange>
 struct blocks_cache_offset_t {
-    const blocks_cache_t<M, numBlocks> blocks_cache;
+    const blocks_cache_t<M, halfOffsetRange> blocks_cache;
     const offset_t offset;
 };
 
-template <size_t M>
+template <long M>
 struct ref_comp_t {
     const block_t<M> ref;
     const block_t<M> comp;
