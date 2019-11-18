@@ -1,0 +1,312 @@
+=== Generated schedule for mkPcieTracer ===
+
+Method schedule
+---------------
+Method: pci_request_get
+Ready signal: tlpToBusFifo.i_notEmpty
+Conflict-free: pci_response_put,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__write,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Conflicts: pci_request_get
+ 
+Method: pci_response_put
+Ready signal: tlpFromBusFifo.i_notFull
+Conflict-free: pci_request_get,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__write,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Conflicts: pci_response_put
+ 
+Method: trace_put
+Ready signal: (! fromPcie.whas) && (! toPcie.whas) &&
+	      ((! tlpTracingReg) ||
+	       toPcieTraceBram_cbram_counter_0_positive_reg)
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_bramServer_response_get
+Sequenced before: traceServer_tlpTracing__write
+Sequenced after: traceServer_tlpTraceBramWrAddr__read
+Sequenced after (restricted): bus_request_put, bus_response_get
+Conflicts: trace_put, traceServer_bramServer_request_put
+ 
+Method: bus_request_put
+Ready signal: tlpToBusFifo.i_notFull
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before (restricted): trace_put,
+			       traceServer_tlpTracing__write,
+			       traceServer_tlpTraceBramWrAddr__write
+Conflicts: bus_request_put
+ 
+Method: bus_response_get
+Ready signal: tlpBusResponseFifo.i_notEmpty &&
+	      isRootBroadcastMessage.i_notEmpty
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       bus_request_put,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before (restricted): trace_put,
+			       traceServer_tlpTracing__write,
+			       traceServer_tlpTraceBramWrAddr__write
+Conflicts: bus_response_get
+ 
+Method: traceServer_tlpTracing__write
+Ready signal: True
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write
+Sequenced before (restricted): traceServer_tlpTracing__write
+Sequenced after: trace_put, traceServer_tlpTracing__read
+Sequenced after (restricted): bus_request_put,
+			      bus_response_get,
+			      traceServer_tlpTraceBramWrAddr__read,
+			      traceServer_bramServer_request_put,
+			      traceServer_bramServer_response_get
+ 
+Method: traceServer_tlpTracing__read
+Ready signal: True
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before: traceServer_tlpTracing__write
+ 
+Method: traceServer_tlpTraceLimit__write
+Ready signal: True
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__write,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before (restricted): traceServer_tlpTraceLimit__write
+Sequenced after: traceServer_tlpTraceLimit__read
+ 
+Method: traceServer_tlpTraceLimit__read
+Ready signal: True
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__write,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before: traceServer_tlpTraceLimit__write
+ 
+Method: traceServer_tlpTraceBramWrAddr__write
+Ready signal: tlpTraceBramWrAddrFifo.i_notFull
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       trace_put,
+	       traceServer_tlpTracing__write,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced after (restricted): bus_request_put,
+			      bus_response_get,
+			      traceServer_tlpTraceBramWrAddr__read
+Conflicts: traceServer_tlpTraceBramWrAddr__write
+ 
+Method: traceServer_tlpTraceBramWrAddr__read
+Ready signal: True
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put,
+	       traceServer_bramServer_response_get
+Sequenced before: trace_put
+Sequenced before (restricted): traceServer_tlpTracing__write,
+			       traceServer_tlpTraceBramWrAddr__write
+ 
+Method: traceServer_bramServer_request_put
+Ready signal: (! tlpTracingReg) &&
+	      fromPcieTraceBram_cbram_counter_0_positive_reg &&
+	      toPcieTraceBram_cbram_counter_0_positive_reg
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_response_get
+Sequenced before (restricted): traceServer_tlpTracing__write
+Conflicts: trace_put, traceServer_bramServer_request_put
+ 
+Method: traceServer_bramServer_response_get
+Ready signal: bramMuxReg_responseFifo_rv.port0__read[192]
+Conflict-free: pci_request_get,
+	       pci_response_put,
+	       trace_put,
+	       bus_request_put,
+	       bus_response_get,
+	       traceServer_tlpTracing__read,
+	       traceServer_tlpTraceLimit__write,
+	       traceServer_tlpTraceLimit__read,
+	       traceServer_tlpTraceBramWrAddr__write,
+	       traceServer_tlpTraceBramWrAddr__read,
+	       traceServer_bramServer_request_put
+Sequenced before (restricted): traceServer_tlpTracing__write
+Conflicts: traceServer_bramServer_response_get
+ 
+Rule schedule
+-------------
+Rule: fromPcieTraceBram_cbram_counter_0_react
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fromPcieTraceBram_cbram_counter_1_react
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fromPcieTraceBram_cbram_bramRule
+Predicate: (! fromPcieTraceBram_cbram_data2_0[193]) ||
+	   (! fromPcieTraceBram_cbram_responseFifo_0.notFull) ||
+	   fromPcieTraceBram_cbram_responseFifo_0.i_notFull
+Blocking rules: (none)
+ 
+Rule: fromPcieTraceBram_cbram_bramRule_1
+Predicate: (! fromPcieTraceBram_cbram_data2_1[193]) ||
+	   (! fromPcieTraceBram_cbram_responseFifo_1.notFull) ||
+	   fromPcieTraceBram_cbram_responseFifo_1.i_notFull
+Blocking rules: (none)
+ 
+Rule: toPcieTraceBram_cbram_counter_0_react
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: toPcieTraceBram_cbram_counter_1_react
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: toPcieTraceBram_cbram_bramRule
+Predicate: (! toPcieTraceBram_cbram_data2_0[193]) ||
+	   (! toPcieTraceBram_cbram_responseFifo_0.notFull) ||
+	   toPcieTraceBram_cbram_responseFifo_0.i_notFull
+Blocking rules: (none)
+ 
+Rule: toPcieTraceBram_cbram_bramRule_1
+Predicate: (! toPcieTraceBram_cbram_data2_1[193]) ||
+	   (! toPcieTraceBram_cbram_responseFifo_1.notFull) ||
+	   toPcieTraceBram_cbram_responseFifo_1.i_notFull
+Blocking rules: (none)
+ 
+Rule: bramMuxReg_respond
+Predicate: fromPcieTraceBram_cbram_responseFifo_0.i_notEmpty &&
+	   (! bramMuxReg_responseFifo_rv.port1__read[192]) &&
+	   (! tlpTracingReg)
+Blocking rules: bramMuxReg_respond_1
+ 
+Rule: bramMuxReg_respond_1
+Predicate: (! bramMuxReg_responseFifo_rv.port1__read[192]) &&
+	   toPcieTraceBram_cbram_responseFifo_0.i_notEmpty &&
+	   (! tlpTracingReg)
+Blocking rules: (none)
+ 
+Rule: incTimestamp
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: sniffTlpFromBus
+Predicate: tlpFromBusFifo.i_notEmpty &&
+	   tlpBusResponseFifo.i_notFull && isRootBroadcastMessage.i_notFull
+Blocking rules: (none)
+ 
+Rule: doTracing
+Predicate: fromPcieTraceBram_cbram_counter_0_positive_reg &&
+	   toPcieTraceBram_cbram_counter_0_positive_reg &&
+	   ((! tlpTraceBramWrAddrFifo.notEmpty) ||
+	    tlpTraceBramWrAddrFifo.i_notEmpty) &&
+	   tlpTracingReg && (fromPcie.whas || toPcie.whas)
+Blocking rules: (none)
+ 
+Logical execution order: pci_request_get,
+			 pci_response_put,
+			 bus_request_put,
+			 bus_response_get,
+			 traceServer_tlpTracing__read,
+			 traceServer_tlpTraceLimit__read,
+			 traceServer_tlpTraceLimit__write,
+			 traceServer_tlpTraceBramWrAddr__read,
+			 trace_put,
+			 traceServer_bramServer_request_put,
+			 traceServer_bramServer_response_get,
+			 sniffTlpFromBus,
+			 doTracing,
+			 traceServer_tlpTraceBramWrAddr__write,
+			 incTimestamp,
+			 fromPcieTraceBram_cbram_bramRule,
+			 fromPcieTraceBram_cbram_bramRule_1,
+			 fromPcieTraceBram_cbram_counter_1_react,
+			 toPcieTraceBram_cbram_bramRule,
+			 toPcieTraceBram_cbram_bramRule_1,
+			 toPcieTraceBram_cbram_counter_1_react,
+			 bramMuxReg_respond,
+			 fromPcieTraceBram_cbram_counter_0_react,
+			 bramMuxReg_respond_1,
+			 traceServer_tlpTracing__write,
+			 toPcieTraceBram_cbram_counter_0_react
+
+============================================

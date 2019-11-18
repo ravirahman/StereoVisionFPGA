@@ -1,0 +1,102 @@
+=== Generated schedule for mkMyDutRequestInverter ===
+
+Method schedule
+---------------
+Method: ifc_readDRAM
+Ready signal: fifo_readDRAM.i_notFull
+Conflict-free: ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: ifc_readDRAM
+ 
+Method: ifc_loadDRAM
+Ready signal: fifo_loadDRAM.i_notFull
+Conflict-free: ifc_readDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: ifc_loadDRAM
+ 
+Method: ifc_requestPoints
+Ready signal: fifo_requestPoints.i_notFull
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: ifc_requestPoints
+ 
+Method: ifc_reset_dut
+Ready signal: fifo_reset_dut.i_notFull
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: ifc_reset_dut
+ 
+Method: inverseIfc_readDRAM
+Ready signal: fifo_readDRAM.i_notEmpty
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: inverseIfc_readDRAM
+ 
+Method: inverseIfc_loadDRAM
+Ready signal: fifo_loadDRAM.i_notEmpty
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+Conflicts: inverseIfc_loadDRAM
+ 
+Method: inverseIfc_requestPoints
+Ready signal: fifo_requestPoints.i_notEmpty
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_reset_dut
+Conflicts: inverseIfc_requestPoints
+ 
+Method: inverseIfc_reset_dut
+Ready signal: fifo_reset_dut.i_notEmpty
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints
+Conflicts: inverseIfc_reset_dut
+ 
+Logical execution order: ifc_readDRAM,
+			 ifc_loadDRAM,
+			 ifc_requestPoints,
+			 ifc_reset_dut,
+			 inverseIfc_readDRAM,
+			 inverseIfc_loadDRAM,
+			 inverseIfc_requestPoints,
+			 inverseIfc_reset_dut
+
+======================================================
