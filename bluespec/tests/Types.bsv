@@ -6,6 +6,9 @@ import FixedPoint::*;
 // Number of bits to specify the image point coordinates (both x and y)
 typedef 6 PB;
 
+// dimension of a pixel. must be a power of 2. Will usually be either 1 (greyscale) or 4 (color), where the last dimension is ignored.
+typedef 1 PD;
+
 // Number of bits for the integer part of the fixed point number giving the real world distance
 typedef 8 FPBI;
 // Number of bits for the fractional part of the fixed point number giving the real world distance
@@ -14,11 +17,11 @@ typedef 8 FPBF;
 // Number of bits per pixel
 typedef 8 PIXELWIDTH;
 
-// Number of pixels contained in a block
-typedef 64 NPIXELS;
+// Number of pixels contained in a block in one dimension
+typedef 5 NPIXELS;
 
-// Number of bits for the score bewteen two block
-typedef 8 SB;
+
+typedef 188 IMAGEWIDTH;
 
 // Number of Single Points that we calculate in parallel
 typedef 2 N;

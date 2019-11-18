@@ -1,59 +1,56 @@
 // This file contains the interface and implementation of the block that computes the score between two given blocks
 
-//import Types::*;
 import Vector::*;
 import FIFO::*;
+import Pixel::*;
+import ClientServer::*;
+import GetPut::*;
 
-interface ComputeScore#(numeric type sbt, numeric type npixelst, numeric type pixelwidtht);
-	method Action loadBlocks ( Vector#(npixelst, UInt#(pixelwidtht)) refBlock,
-				   Vector#(npixelst, UInt#(pixelwidtht)) compBlock);
-        method ActionValue#(UInt#(sbt)) getScore;
-endinterface
+typedef struct {
+	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) refBlock;
+	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) compBlock;
+} BlockPair#(numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
+typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
-module mkComputeScore(ComputeScore#(sbt, npixelst, pixelwidtht)) provisos (Add#(a__, pixelwidtht, sbt), Add#(1, b__, npixelst));
+typedef Server#(
+	BlockPair#(npixelst, pd, pixelWidth),
+	ScoreT#(npixelst, pd, pixelWidth)
+) ComputeScore#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
-	FIFO#(Vector#(npixelst, UInt#(pixelwidtht))) refBlocks <- mkFIFO();
-        FIFO#(Vector#(npixelst, UInt#(pixelwidtht))) compBlocks <- mkFIFO();
-        FIFO#(UInt#(sbt)) scores <- mkFIFO();
+module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
+	provisos(
+		Add#(1, a__, TMul#(npixelst, npixelst))
+	);
 
-	function UInt#(sbt) abs_diff (UInt#(pixelwidtht) a, UInt#(pixelwidtht) b);
-		UInt#(pixelwidtht) df = ?;
-		if (a>b) begin
-			df = a-b;
-		end else begin
-			df = b-a;
+	FIFO#(BlockPair#(npixelst, pd, pixelWidth)) inFIFO <- mkFIFO();
+	FIFO#(ScoreT#(npixelst, pd, pixelWidth)) outFIFO <- mkFIFO();
+
+	function ScoreT#(npixelst, pd, pixelWidth) abs_diff (Pixel#(pd, pixelWidth) a, Pixel#(pd, pixelWidth) b);
+		ScoreT#(npixelst, pd, pixelWidth) df = 0;
+		for (Integer i = 0; i < valueOf(pd); i = i + 1) begin
+
+			if (a[i] > b[i]) begin
+				df = df + extend(a[i] - b[i]);
+			end else begin
+				df = df + extend(b[i] - a[i]);
+			end
 		end
-		UInt#(sbt) df_ext = extend(df);
-		return df_ext;
+		
+		return df;
 	endfunction
 
 	rule compute (True);
 
-		let refB = refBlocks.first();
-                let compB = compBlocks.first();
-		refBlocks.deq();
-		compBlocks.deq();
+		let refB = inFIFO.first().refBlock;
+		let compB = inFIFO.first().compBlock;
+		inFIFO.deq();
 
 		let score_vec = zipWith(abs_diff, refB, compB);
 		let score = fold(\+ , score_vec);
-		scores.enq(score);		
-
+		outFIFO.enq(score);
 	endrule
 
-
-	method Action loadBlocks( Vector#(npixelst, UInt#(pixelwidtht)) refBlock,
-				  Vector#(npixelst, UInt#(pixelwidtht)) compBlock);
-	
-		refBlocks.enq(refBlock);
-		compBlocks.enq(compBlock);
-	
-	endmethod	
-
-	method ActionValue#(UInt#(sbt)) getScore();
-	
-		scores.deq();
-		return scores.first();
-
-	endmethod
+	interface Put request = toPut(inFIFO);
+	interface Get response = toGet(outFIFO);
 endmodule

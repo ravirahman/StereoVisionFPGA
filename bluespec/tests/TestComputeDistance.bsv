@@ -4,10 +4,12 @@ import ComputeDistance::*;
 import Types::*;
 import FixedPoint::*;
 import FShow::*;
+import ClientServer::*;
+import GetPut::*;
 
 module mkTest();
 
-	ComputeDistance cd <- mkComputeDistance();
+	ComputeDistance#(PB, FPBI, FPBF) cd <- mkComputeDistance(real_world_cte);
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
@@ -16,13 +18,13 @@ module mkTest();
 	function Action dofeed(UInt#(PB) d);
 		action
 			feed <= feed + 1;
-			cd.putPixelDistance(d);
+			cd.request.put(d);
 		endaction
 	endfunction
 
 	function Action docheck(FixedPoint#(FPBI, FPBF) expDist);
 		action
-			let compDistance <- cd.getRealDistance();
+			let compDistance <- cd.response.get();
 			if (compDistance != expDist) begin
 				$display("Wanted: ", fshow(expDist));
 				$display("Got: ", fshow(compDistance));
@@ -37,8 +39,8 @@ module mkTest();
     UInt#(PB) dist3 = 20;
 
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
-    FixedPoint#(FPBI, FPBF) to2 = 2.45063;
-    FixedPoint#(FPBI, FPBF) to3 = 6.73925;
+    FixedPoint#(FPBI, FPBF) to2 = 2.4433593750;
+    FixedPoint#(FPBI, FPBF) to3 = 6.7187500000;
 
     rule f0 (feed == 0); dofeed(dist1); endrule
     rule f1 (feed == 1); dofeed(dist2); endrule
