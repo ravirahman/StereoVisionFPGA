@@ -7,12 +7,17 @@ import FixedPoint::*;
 import Types::*;
 import ComputeScore::*;
 import UpdateScore::*;
+import ComputeDistance::*;
 import LoadBlocks::*;
 
+typedef struct{
+  Bit#(PB) y0;
+  Bit#(PB) x0;
+} Point_Coords deriving (Bits);
 
 interface StereoVisionSinglePoint;
-	method Action putImagePoint (UInt#(PB) x, UInt#(PB) y);
-        method ActionValue#(FixedPoint#(FPBI, FPBF)) getDistance;
+	method Action putImagePoint (Point_Coords point);
+        method ActionValue#(Bit#(TAdd#(FPBI, FPBF))) getDistance;
 endinterface
 
 
@@ -81,7 +86,7 @@ module mkStereoVisionSinglePoint(StereoVisionSinglePoint);
 
 	rule updateScoreRule if (compCounter < searchAreaUInt);
 		let sc <- cs.getScore();
-		//$display("Block score is: ", sc);
+		$display("Block score is: ", sc);
 		us.putScore(sc, compCounter);
 		compCounter <= compCounter+1;
 	endrule
@@ -89,11 +94,11 @@ module mkStereoVisionSinglePoint(StereoVisionSinglePoint);
 	rule computeRealWorldDistanceRule if (compCounter == searchAreaUInt);
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.getBestDistance();
-		//$display("Best distance is: ", bd);
+		$display("Best distance is: ", bd);
 		let d = computeRealWorldDistance(bd);
 		realDistances.enq(d);
 		// Restart the counters
-		//$display("Dequeued");
+		$display("Dequeued");
 		loadCounter <= 0;
 		compCounter <= 0;
 		referenceBlockLoaded <= False;
@@ -105,15 +110,18 @@ module mkStereoVisionSinglePoint(StereoVisionSinglePoint);
 
 
 	// Interface methods
-	method Action putImagePoint (UInt#(PB) x, UInt#(PB) y);
+	method Action putImagePoint (Point_Coords point);
+		UInt#(PB) x = unpack(point.x0);
+                UInt#(PB) y = unpack(point.y0);
 		xs.enq(x);
 		ys.enq(y);
 	endmethod
 
-	method ActionValue#(FixedPoint#(FPBI, FPBF)) getDistance();
+	method ActionValue#(Bit#(TAdd#(FPBI, FPBF))) getDistance();
 		let a = realDistances.first();
 		realDistances.deq();
-		return a;
+                Bit#(TAdd#(FPBI, FPBF)) b = pack(a);
+		return b;
 	endmethod
 
 
