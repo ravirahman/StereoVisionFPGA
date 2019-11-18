@@ -4,12 +4,12 @@
 import FixedPoint::*;
 
 // Number of bits to specify the image point coordinates (both x and y)
-typedef 8 PB;
+typedef 6 PB;
 
 // Number of bits for the integer part of the fixed point number giving the real world distance
-typedef 10 FPBI;
+typedef 8 FPBI;
 // Number of bits for the fractional part of the fixed point number giving the real world distance
-typedef 10 FPBF;
+typedef 8 FPBF;
 
 // Number of bits per pixel
 typedef 8 PIXELWIDTH;
@@ -19,6 +19,9 @@ typedef 64 NPIXELS;
 
 // Number of bits for the score bewteen two block
 typedef 8 SB;
+
+// Number of Single Points that we calculate in parallel
+typedef 2 N;
 
 // Constant defining the camera system (necessary to compute the real world distance from the
 // pixel distance). This constant corresponds to A = focal_distance*distance_between_cameras/pixel_pitch

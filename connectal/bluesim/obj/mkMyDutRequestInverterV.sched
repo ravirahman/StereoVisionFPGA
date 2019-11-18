@@ -1,0 +1,102 @@
+=== Generated schedule for mkMyDutRequestInverterV ===
+
+Method schedule
+---------------
+Method: ifc_readDRAM
+Ready signal: inv_readDRAM_inverter.RDY_mod_put
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: ifc_loadDRAM
+Ready signal: inv_loadDRAM_inverter.RDY_mod_put
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: ifc_requestPoints
+Ready signal: inv_requestPoints_inverter.RDY_mod_put
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: ifc_reset_dut
+Ready signal: inv_reset_dut_inverter.RDY_mod_put
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: inverseIfc_readDRAM
+Ready signal: inv_readDRAM_inverter.RDY_inverse_get
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: inverseIfc_loadDRAM
+Ready signal: inv_loadDRAM_inverter.RDY_inverse_get
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: inverseIfc_requestPoints
+Ready signal: inv_requestPoints_inverter.RDY_inverse_get
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Method: inverseIfc_reset_dut
+Ready signal: inv_reset_dut_inverter.RDY_inverse_get
+Conflict-free: ifc_readDRAM,
+	       ifc_loadDRAM,
+	       ifc_requestPoints,
+	       ifc_reset_dut,
+	       inverseIfc_readDRAM,
+	       inverseIfc_loadDRAM,
+	       inverseIfc_requestPoints,
+	       inverseIfc_reset_dut
+ 
+Logical execution order: ifc_readDRAM,
+			 ifc_loadDRAM,
+			 ifc_requestPoints,
+			 ifc_reset_dut,
+			 inverseIfc_readDRAM,
+			 inverseIfc_loadDRAM,
+			 inverseIfc_requestPoints,
+			 inverseIfc_reset_dut
+
+=======================================================

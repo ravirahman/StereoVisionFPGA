@@ -7,7 +7,6 @@ import FixedPoint::*;
 import Types::*;
 import ComputeScore::*;
 import UpdateScore::*;
-import ComputeDistance::*;
 import LoadBlocks::*;
 
 
@@ -82,7 +81,7 @@ module mkStereoVisionSinglePoint(StereoVisionSinglePoint);
 
 	rule updateScoreRule if (compCounter < searchAreaUInt);
 		let sc <- cs.getScore();
-		$display("Block score is: ", sc);
+		//$display("Block score is: ", sc);
 		us.putScore(sc, compCounter);
 		compCounter <= compCounter+1;
 	endrule
@@ -90,11 +89,11 @@ module mkStereoVisionSinglePoint(StereoVisionSinglePoint);
 	rule computeRealWorldDistanceRule if (compCounter == searchAreaUInt);
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.getBestDistance();
-		$display("Best distance is: ", bd);
+		//$display("Best distance is: ", bd);
 		let d = computeRealWorldDistance(bd);
 		realDistances.enq(d);
 		// Restart the counters
-		$display("Dequeued");
+		//$display("Dequeued");
 		loadCounter <= 0;
 		compCounter <= 0;
 		referenceBlockLoaded <= False;

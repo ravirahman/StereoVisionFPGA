@@ -35,7 +35,7 @@ module mkLoadBlock(LoadBlock#(pbt, npixelst, pixelwidtht));
 			block[i] = 1;
 		end
 
-		$display("block load ref : ", block[0]);
+		//$display("block load ref : ", block[0]);
 
 		blocks.enq(block);	
 				
@@ -116,7 +116,7 @@ module mkLoadCompBlock(LoadBlock#(pbt, npixelst, pixelwidtht));
 			end
 		end
 
-		$display("block load comp ", block[0]);
+		//$display("block load comp ", block[0]);
 
 		blocks.enq(block);	
 				

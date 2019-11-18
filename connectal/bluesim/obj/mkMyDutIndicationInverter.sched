@@ -1,0 +1,38 @@
+=== Generated schedule for mkMyDutIndicationInverter ===
+
+Method schedule
+---------------
+Method: ifc_returnOutputDDR
+Ready signal: fifo_returnOutputDDR.i_notFull
+Conflict-free: ifc_returnOutputSV,
+	       inverseIfc_returnOutputDDR,
+	       inverseIfc_returnOutputSV
+Conflicts: ifc_returnOutputDDR
+ 
+Method: ifc_returnOutputSV
+Ready signal: fifo_returnOutputSV.i_notFull
+Conflict-free: ifc_returnOutputDDR,
+	       inverseIfc_returnOutputDDR,
+	       inverseIfc_returnOutputSV
+Conflicts: ifc_returnOutputSV
+ 
+Method: inverseIfc_returnOutputDDR
+Ready signal: fifo_returnOutputDDR.i_notEmpty
+Conflict-free: ifc_returnOutputDDR,
+	       ifc_returnOutputSV,
+	       inverseIfc_returnOutputSV
+Conflicts: inverseIfc_returnOutputDDR
+ 
+Method: inverseIfc_returnOutputSV
+Ready signal: fifo_returnOutputSV.i_notEmpty
+Conflict-free: ifc_returnOutputDDR,
+	       ifc_returnOutputSV,
+	       inverseIfc_returnOutputDDR
+Conflicts: inverseIfc_returnOutputSV
+ 
+Logical execution order: ifc_returnOutputDDR,
+			 ifc_returnOutputSV,
+			 inverseIfc_returnOutputDDR,
+			 inverseIfc_returnOutputSV
+
+=========================================================
