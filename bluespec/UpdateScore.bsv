@@ -30,7 +30,6 @@ module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 			let score = scoreDistance.score;
 			let distance = scoreDistance.distance;
 
-			
 			if (isValid(bestScore)) begin
 				if (fromMaybe(?, bestScore) > score) begin
 					bestScore <= tagged Valid score;
