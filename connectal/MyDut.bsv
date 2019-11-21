@@ -49,20 +49,30 @@ typedef struct{
 // Struct to request multiple (x,y) image points in parallel. The number of
 // (x,y) points in parallel is equal to the number of StereoVisionSinglePoint
 // modules we have in parallel 
+//typedef struct{
+//    Vector#(N, Bit#(PB)) xs;
+//    Vector#(N, Bit#(PB)) ys;
+//} Point_Coords deriving (Bits);
 typedef struct{
-    Vector#(N, Bit#(PB)) xs;
-    Vector#(N, Bit#(PB)) ys;
+    Vector#(2, Bit#(6)) xs;
+    Vector#(2, Bit#(6)) ys;
 } Point_Coords deriving (Bits);
-
 
 // Struct to get back multiple distances in parallel. The number of
 // distances in parallel is equal to the number of StereoVisionSinglePoint
 // modules we have in parallel 
+//typedef struct{
+//    Vector#(N, TAdd#(FPBI, FPBF)) real_xs;
+//    Vector#(N, TAdd#(FPBI, FPBF)) real_ys;
+//    Vector#(N, TAdd#(FPBI, FPBF)) real_zs;
+//} Dist_List deriving (Bits);
+
 typedef struct{
-    Vector#(N, TAdd#(FPBI, FPBF)) real_xs;
-    Vector#(N, TAdd#(FPBI, FPBF)) real_ys;
-    Vector#(N, TAdd#(FPBI, FPBF)) real_zs;
+    Vector#(2, 16) real_xs;
+    Vector#(2, 16) real_ys;
+    Vector#(2, 16) real_zs;
 } Dist_List deriving (Bits);
+
 
 // interface used by software
 interface MyDutRequest;
@@ -189,7 +199,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
         
 	method Action requestPoints (Point_Coords points) if (!isResetting); 
             let x_points = points.xs;
-            let y_points = points.ys:
+            let y_points = points.ys;
 	    Vector#(N, UInt#(PB)) xs = newVector();
             Vector#(N, UInt#(PB)) ys = newVector();
      	    for (Integer i = 0; i < N; i = i+1) begin
