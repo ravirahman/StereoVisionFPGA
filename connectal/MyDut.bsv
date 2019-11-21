@@ -50,10 +50,8 @@ typedef struct{
 // (x,y) points in parallel is equal to the number of StereoVisionSinglePoint
 // modules we have in parallel 
 typedef struct{
-    Bit#(6) y1;
-    Bit#(6) x1;
-    Bit#(6) y0;
-    Bit#(6) x0;
+    Vector#(N, Bit#(PB)) xs;
+    Vector#(N, Bit#(PB)) ys;
 } Point_Coords deriving (Bits);
 
 
@@ -61,8 +59,9 @@ typedef struct{
 // distances in parallel is equal to the number of StereoVisionSinglePoint
 // modules we have in parallel 
 typedef struct{
-    Bit#(16) dist1;
-    Bit#(16) dist0;
+    Vector#(N, TAdd#(FPBI, FPBF)) real_xs;
+    Vector#(N, TAdd#(FPBI, FPBF)) real_ys;
+    Vector#(N, TAdd#(FPBI, FPBF)) real_zs;
 } Dist_List deriving (Bits);
 
 // interface used by software
@@ -74,7 +73,7 @@ interface MyDutRequest;
     method Action loadDRAM (Bit#(32) line_addr, DRAM_Line line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints (Point_Coords point);
+    method Action requestPoints (Point_Coords points);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -83,7 +82,7 @@ endinterface
 
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
-    method Action returnOutputDDR (DRAM_Line resp);
+    //method Action returnOutputDDR (DRAM_Line resp);
     method Action returnOutputSV (Dist_List distances);
 endinterface
 
@@ -136,8 +135,8 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     DDR3_6375User ddr3_user <- mkDDR3WrapperSync(ddr3_ctrl_200mhz.user);
 `endif
 
-    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
-
+    //StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
+    StereoVisionMultiplePoints#(N, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, real_world_cte);
 
 
     // DDR3_6375User definition in DDR3User.bsv
@@ -148,17 +147,24 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     // SW and HW methods
 
     // Send a message back to sofware whenever the response is ready
-    rule indicationToSoftwareDDR;
-        let d <- ddr3_user.response.get;
-        DRAM_Line data = unpack(d);
-        indication.returnOutputDDR(data); 
-    endrule
+    //rule indicationToSoftwareDDR;
+    //    let d <- ddr3_user.response.get;
+    //    DRAM_Line data = unpack(d);
+    //    indication.returnOutputDDR(data); 
+    //endrule
 
     rule indicationToSoftwareSV;
-        let d <- svmp.getDistances();     
-        Bit#(TAdd#(FPBI, FPBF)) dst0 = pack(d[0]);
-        Bit#(TAdd#(FPBI, FPBF)) dst1 = pack(d[1]);
-	let a = Dist_List{dist1: dst1, dist0: dst0};
+        let d <- svmp.getDistances();
+	Vector#(N, TAdd#(FPBI, FPBF)) xs = newVector;
+	Vector#(N, TAdd#(FPBI, FPBF)) ys = newVector;
+	Vector#(N, TAdd#(FPBI, FPBF)) zs = newVector;
+     	for (Integer i = 0; i < N; i = i+1) begin
+	    let pt = d[i];
+	    xs[i] = pack(pt.x);
+	    ys[i] = pack(pt.y);
+	    zs[i] = pack(pt.z);
+	end
+	let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
         indication.returnOutputSV(a); 
     endrule
     
@@ -170,28 +176,27 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             ddr3_user.request.put(req);
         endmethod
         
-	method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
-            // read request
-            let req = DDR3_LineReq{ write: False, line_addr: truncate(line_addr), data_in: 0};
-            ddr3_user.request.put(req);
-        endmethod
+	//method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
+        //    // read request
+        //    let req = DDR3_LineReq{ write: False, line_addr: truncate(line_addr), data_in: 0};
+        //    ddr3_user.request.put(req);
+        //endmethod
         
 	method Action reset_dut;
             my_rst.assertReset; // assert my_rst.new_rst signal
             isResetting <= True;
         endmethod
         
-	method Action requestPoints (Point_Coords point) if (!isResetting); 
-            UInt#(PB) x1 = unpack(point.x1);
-            UInt#(PB) y1 = unpack(point.y1);
-            UInt#(PB) x0 = unpack(point.x0);
-            UInt#(PB) y0 = unpack(point.y0);
-  	    Vector#(N, UInt#(PB)) xs = newVector();
+	method Action requestPoints (Point_Coords points) if (!isResetting); 
+            let x_points = points.xs;
+            let y_points = points.ys:
+	    Vector#(N, UInt#(PB)) xs = newVector();
             Vector#(N, UInt#(PB)) ys = newVector();
-	    xs[0] = x0;
-	    xs[1] = x1;
-	    ys[0] = y0;
-	    ys[1] = y1;
+     	    for (Integer i = 0; i < N; i = i+1) begin
+	       xs[i] = pack(x_points[i]);
+	       ys[i] = pack(y_points[i]);
+	    end
+	    
 	    svmp.putImagePoints(xs, ys);
         endmethod
     endinterface
