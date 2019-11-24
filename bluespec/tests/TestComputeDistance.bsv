@@ -6,16 +6,18 @@ import FixedPoint::*;
 import FShow::*;
 import ClientServer::*;
 import GetPut::*;
+import XYPointDistance::*;
+import XYPoint::*;
 
 module mkTest();
 
-	ComputeDistance#(PB, FPBI, FPBF) cd <- mkComputeDistance(real_world_cte);
+	ComputeDistance#(PB, FPBI, FPBF) cd <- mkComputeDistance(focal_dist, real_world_cte);
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
 	Reg#(Bit#(4)) check <- mkReg(0);
 
-	function Action dofeed(UInt#(PB) d);
+	function Action dofeed(XYPointDistance#(PB) d);
 		action
 			feed <= feed + 1;
 			cd.request.put(d);
@@ -25,18 +27,18 @@ module mkTest();
 	function Action docheck(FixedPoint#(FPBI, FPBF) expDist);
 		action
 			let compDistance <- cd.response.get();
-			if (compDistance != expDist) begin
+			if (abs(compDistance[2] - expDist) > 0.01) begin  // only comparing z for now
 				$display("Wanted: ", fshow(expDist));
-				$display("Got: ", fshow(compDistance));
+				$display("Got: ", fshow(compDistance[2]));
 				passed <= False;
 			end
 			check <= check+1;
 		endaction
 	endfunction
 
-    UInt#(PB) dist1 = 10;
-    UInt#(PB) dist2 = 55;
-    UInt#(PB) dist3 = 20;
+	XYPointDistance#(PB) dist1 = mkXYPointDistance(mkXYPoint(0,0), 10);
+	XYPointDistance#(PB) dist2 = mkXYPointDistance(mkXYPoint(0,0), 55);
+	XYPointDistance#(PB) dist3 = mkXYPointDistance(mkXYPoint(0,0), 20);
 
     FixedPoint#(FPBI, FPBF) to1 = 13.4378509521484375;
     FixedPoint#(FPBI, FPBF) to2 = 2.4432373046875000;

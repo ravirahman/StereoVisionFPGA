@@ -13,6 +13,8 @@ import GetPut::*;
 import UpdateScore::*;
 import LoadBlocks::*;
 import DDR3User::*;
+import XYPointDistance::*;
+import XYPoint::*;
 
 // Connectal HW-SW can use a struct type
 // However, the components must have a type of Bit#(n)
@@ -30,27 +32,20 @@ typedef struct{
 } DRAM_Line deriving (Bits);
 
 
-
 typedef Server#(
 	XYPoint#(pb),
-	FixedPoint#(fpbi, fpbf)
-) StereoVisionSinglePoint#(numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchAreaUInt, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
+	Vector#(3, FixedPoint#(fpbi, fpbf))
+) StereoVisionSinglePoint#(numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchArea, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
+module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) focal_distance, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 		, Add#(c__, pb, 26)
 		, Add#(TAdd#(pb, 1), d__, fpbi)
 	);
-	
-	function FixedPoint#(fpbi, fpbf) computeRealWorldDistance (UInt#(pb) pixelDist);
-		FixedPoint#(fpbi, fpbf) fxptPixelDist = fromUInt(pixelDist);
-		FixedPoint#(fpbi, fpbf) realDist =  real_world_cte/fxptPixelDist;
-		return realDist;	
-	endfunction
 
-	FIFO#(FixedPoint#(fpbi, fpbf)) realDistances <- mkFIFO();
+	FIFO#(Vector#(3, FixedPoint#(fpbi, fpbf))) realDistances <- mkFIFO();
 	FIFO#(XYPoint#(pb)) inFIFO <- mkFIFO();
 
 	// Counter to keep track of the number of blocks we have loaded in memory
@@ -69,12 +64,12 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
     LoadBlocks#(0, imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
 	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
 	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
-	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(real_world_cte);
+	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(focal_distance, real_world_cte);
 	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();	
 	
 	// This rules keeps asking for blocks to be loaded until
 	// we have loaded all the necessary blocks in the search area
-	rule retrieveBlock if (loadCounter < fromInteger(valueOf(searchAreaUInt)));
+	rule retrieveBlock if (loadCounter < fromInteger(valueOf(searchArea)));
 		let xy = inFIFO.first();
 		
 		if (referenceBlockLoaded == False) begin
@@ -90,30 +85,25 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		loadCounter <= loadCounter + 1;
 	endrule
 
-	rule computeScoreRule if (compCounter < fromInteger(valueOf(searchAreaUInt)));
+	rule computeScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
+		let c <- loadCompBlock.response.get();
+		BlockPair#(npixelst, pd, pixelWidth) bp;
+		bp.compBlock = c;
 		if (referenceBlockStored == False) begin
 			let b <- loadRefBlock.response.get();
-			let c <- loadCompBlock.response.get();
 			$display("Ref Block: ", b);
-			$display("Comp block: ", c);
-			BlockPair#(npixelst, pd, pixelWidth) bp;
 			bp.refBlock = b;
-			bp.compBlock = c;
-			cs.request.put(bp);
 			refBlock <= b;
 			referenceBlockStored <= True;
 		end else begin
-			let c <- loadCompBlock.response.get();
-			BlockPair#(npixelst, pd, pixelWidth) bp;
 			bp.refBlock = refBlock;
-			bp.compBlock = c;
 			$display("Ref Block: ", refBlock);
-			$display("Comp block: ", c);
-			cs.request.put(bp);
-		end
+		end		
+		$display("Comp block: ", c);
+		cs.request.put(bp);
 	endrule
 
-	rule updateScoreRule if (compCounter < fromInteger(valueOf(searchAreaUInt)));
+	rule updateScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
 		let sc <- cs.response.get();
 		$display("Block score is: ", sc);
 		ScoreDistanceT#(pb, npixelst, pd, pixelWidth) sd;
@@ -123,11 +113,20 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		compCounter <= compCounter+1;
 	endrule
 
-	rule computeRealWorldDistanceRule if (compCounter == fromInteger(valueOf(searchAreaUInt)));
+	rule computeRealWorldDistanceRule if (compCounter == fromInteger(valueOf(searchArea)));
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.response.get();
 		$display("Best distance is: ", bd);
-		let d = computeRealWorldDistance(bd);
+		XYPointDistance#(pb) pointDistance = ?;
+		pointDistance.point = inFIFO.first();
+		pointDistance.distance = bd;
+		cd.request.put(pointDistance);
+		compCounter <= compCounter+1;
+	endrule
+
+	rule finishUp if (compCounter == fromInteger(valueOf(TAdd#(searchArea, 1))));
+		let d <- cd.response.get();
+		$display("Computed x,y,z is: ", d);
 		realDistances.enq(d);
 		// Restart the counters
 		$display("Dequeued");

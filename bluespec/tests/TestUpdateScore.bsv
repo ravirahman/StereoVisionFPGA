@@ -6,6 +6,8 @@ import Vector::*;
 import GetPut::*;
 import ComputeScore::*;
 import Pixel::*;
+import XYPoint::*;
+import XYPointDistance::*;
 
 
 Int#(4) num_distances_lim = 3;
@@ -44,7 +46,7 @@ module mkTest();
 			let bestDistance <- us.response.get();
 			us.restart();
 			all_fed <= False;
-			feed_counter <= 0;
+            feed_counter <= 0;
 			if (bestDistance != expDist) begin
 				$display("Wanted: ", expDist);
 				$display("Got: ", bestDistance);

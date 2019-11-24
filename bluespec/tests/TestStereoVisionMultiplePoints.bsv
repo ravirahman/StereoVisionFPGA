@@ -21,7 +21,7 @@ module mkTest();
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
 
-	StereoVisionMultiplePoints#(IMAGEWIDTH, N, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, real_world_cte);
+	StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, focal_dist, real_world_cte);
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
@@ -38,7 +38,7 @@ module mkTest();
 		action
 			let compDistance <- svmp.response.get();
 			for (Integer i = 0; i < valueOf(N); i = i + 1) begin
-				if (compDistance[i] != expDist[i]) begin
+				if (compDistance[i][2] != expDist[i]) begin  // only comparing zed
 					$display("Wanted: ", fshow(expDist[i]));
 					$display("Got: ", fshow(compDistance[i]));
 				end

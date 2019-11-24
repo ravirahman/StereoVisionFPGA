@@ -36,21 +36,21 @@ endmodule
 
 typedef StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) SynthStereoVisionSinglePoint;
 (* synthesize *)
-module mkSynthStereoVisionSinglePoint(FixedPoint#(FPBI, FPBF) real_world_cte, SynthStereoVisionSinglePoint ifc);
+module mkSynthStereoVisionSinglePoint(FixedPoint#(FPBI, FPBF) focal_distance, FixedPoint#(FPBI, FPBF) real_world_cte, SynthStereoVisionSinglePoint ifc);
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
-    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) x <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
+    StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) x <- mkStereoVisionSinglePoint(ddr3_user, focal_distance, real_world_cte);
     return x;
 endmodule
 
 typedef StereoVisionMultiplePoints#(IMAGEWIDTH, N, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) SynthStereoVisionMultiplePoints;
 (* synthesize *)
-module mkSynthStereoVisionMultiplePoints(FixedPoint#(FPBI, FPBF) real_world_cte, SynthStereoVisionMultiplePoints ifc);
+module mkSynthStereoVisionMultiplePoints(FixedPoint#(FPBI, FPBF) focal_distance, FixedPoint#(FPBI, FPBF) real_world_cte, SynthStereoVisionMultiplePoints ifc);
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
-    StereoVisionMultiplePoints#(IMAGEWIDTH, N, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) x <- mkStereoVisionMultiplePoints(ddr3_user, real_world_cte);
+    StereoVisionMultiplePoints#(IMAGEWIDTH, N, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) x <- mkStereoVisionMultiplePoints(focal_distance, ddr3_user, real_world_cte);
     return x;
 endmodule
 

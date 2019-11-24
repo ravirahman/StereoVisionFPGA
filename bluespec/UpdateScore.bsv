@@ -7,7 +7,6 @@ import ClientServer::*;
 import GetPut::*;
 import ComputeScore::*;
 
-
 typedef struct {
 	ScoreT#(npixelst, pd, pixelWidth) score;
 	UInt#(pb) distance;
@@ -21,9 +20,8 @@ interface UpdateScore#(numeric type pb, numeric type npixelst, numeric type pd, 
 endinterface
 
 module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
-
 	Reg#(Maybe#(ScoreT#(npixelst, pd, pixelWidth))) bestScore <- mkReg(tagged Invalid);
-	Reg#(Maybe#(UInt#(pb))) bestDistance <- mkReg(tagged Invalid);
+	Reg#(UInt#(pb)) bestDistance <- mkRegU();
 
 	interface Put request;
 		method Action put(ScoreDistanceT#(pb, npixelst, pd, pixelWidth) scoreDistance);
@@ -33,12 +31,12 @@ module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 			if (isValid(bestScore)) begin
 				if (fromMaybe(?, bestScore) > score) begin
 					bestScore <= tagged Valid score;
-					bestDistance <= tagged Valid distance;
+					bestDistance <= distance;
 				end
 				
 			end else begin
 				bestScore <= tagged Valid score;
-				bestDistance <= tagged Valid distance;
+				bestDistance <= distance;
 			end
 		
 		endmethod
@@ -46,12 +44,11 @@ module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 
 	interface Get response;
 		method ActionValue#(UInt#(pb)) get();
-			return fromMaybe(0, bestDistance);
+			return bestDistance;
 		endmethod
 	endinterface
 
 	method Action restart;
 		bestScore <= tagged Invalid;
-		bestDistance <= tagged Invalid;		
 	endmethod
 endmodule
