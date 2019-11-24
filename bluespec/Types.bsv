@@ -23,6 +23,8 @@ typedef 5 NPIXELS;
 
 typedef 208 IMAGEWIDTH;  // must be a multiple of 16
 
+typedef 8192 COMP_BLOCK_DRAM_OFFSET;  // ref block is stored starting at address 0. comp block is stored starting at this address.
+
 // Number of Single Points that we calculate in parallel
 typedef 2 N;
 

@@ -27,7 +27,7 @@ module mkTest();
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
 
-	StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
+	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
 	Reg#(Bit#(4)) check <- mkReg(0);
@@ -76,11 +76,11 @@ module mkTest();
         ddr3_user.request.put(req);
 
         if (nextBlockToLoad == 0) begin
-            // $display("Loading memory");
+            $display("Loading memory");
         end
         
         if (nextBlockToLoad == 128) begin
-            // $display("Finished loading memory");
+            $display("Finished loading memory");
             feed <= feed + 1;
             check <= check + 1;  // nothing to check here
         end

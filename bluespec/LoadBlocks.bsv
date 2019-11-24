@@ -12,9 +12,9 @@ typedef TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)) NumPixelsPerLine#(numeric t
 typedef Server#(
 	XYPoint#(pb),
 	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))
-) LoadBlocks#(numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
+) LoadBlocks#(numeric type dramOffset, numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
-module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) ifc)
+module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth, pb, npixelst, pd, pixelWidth) ifc)
 	provisos(
 		Add#(a__, pb, DDR3_Addr_Size)
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
@@ -35,12 +35,12 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixels
 	function DDR3_Addr getDDR3AddrFromXYPoint(XYPoint#(pb) point);
 		UInt#(26) rowMajorLoc = zeroExtend(point.y) * fromInteger(valueOf(imageWidth));
 		rowMajorLoc = rowMajorLoc + zeroExtend(point.x);
-		DDR3_Addr dramRow = pack(rowMajorLoc) >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))));  // division
+		DDR3_Addr dramRow = pack((rowMajorLoc >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))))) + fromInteger(valueOf(dramOffset)));  // division
 		return zeroExtend(dramRow);
 	endfunction
 
 	function XYPoint#(pb) getXYPointFromDDR3Addr(DDR3_Addr addr);
-		let locInPixelRowMajor = unpack(addr << fromInteger(valueOf(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth))))));
+		let locInPixelRowMajor = (unpack(addr) - fromInteger(valueOf(dramOffset))) << fromInteger(valueOf(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))));
 		XYPoint#(pb) p;
 		p.y = truncate(locInPixelRowMajor / fromInteger(valueOf(imageWidth)));
 		p.x = truncate(locInPixelRowMajor % fromInteger(valueOf(imageWidth)));

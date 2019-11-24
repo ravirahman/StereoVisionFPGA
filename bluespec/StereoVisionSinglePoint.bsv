@@ -34,9 +34,9 @@ typedef struct{
 typedef Server#(
 	XYPoint#(pb),
 	FixedPoint#(fpbi, fpbf)
-) StereoVisionSinglePoint#(numeric type imageWidth, numeric type pb, numeric type searchAreaUInt, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
+) StereoVisionSinglePoint#(numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchAreaUInt, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(imageWidth, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
+module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchAreaUInt, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
@@ -66,8 +66,8 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 	Reg#(Bool) referenceBlockStored <- mkReg(False); 
 
 	// Modules that make the different operations
-    LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
-	LoadBlocks#(imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
+    LoadBlocks#(0, imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
 	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
 	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(real_world_cte);
 	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();	
@@ -94,8 +94,8 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		if (referenceBlockStored == False) begin
 			let b <- loadRefBlock.response.get();
 			let c <- loadCompBlock.response.get();
-			//$display("Ref Block: ", b);
-			//$display("Comp block: ", c);
+			$display("Ref Block: ", b);
+			$display("Comp block: ", c);
 			BlockPair#(npixelst, pd, pixelWidth) bp;
 			bp.refBlock = b;
 			bp.compBlock = c;
@@ -107,8 +107,8 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 			BlockPair#(npixelst, pd, pixelWidth) bp;
 			bp.refBlock = refBlock;
 			bp.compBlock = c;
-			//$display("Ref Block: ", refBlock);
-			//$display("Comp block: ", c);
+			$display("Ref Block: ", refBlock);
+			$display("Comp block: ", c);
 			cs.request.put(bp);
 		end
 	endrule
@@ -130,7 +130,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		let d = computeRealWorldDistance(bd);
 		realDistances.enq(d);
 		// Restart the counters
-		//$display("Dequeued");
+		$display("Dequeued");
 		loadCounter <= 0;
 		compCounter <= 0;
 		referenceBlockLoaded <= False;

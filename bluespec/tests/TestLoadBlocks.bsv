@@ -27,7 +27,7 @@ module mkTest();
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
 
 
-	LoadBlocks#(IMAGEWIDTH, PB, NPIXELS, PD, PIXELWIDTH) loadBlocks <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(0, IMAGEWIDTH, PB, NPIXELS, PD, PIXELWIDTH) loadBlocks <- mkLoadBlocks(ddr3_user);
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
     Reg#(Bit#(4)) check <- mkReg(0);
