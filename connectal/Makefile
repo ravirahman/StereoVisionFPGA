@@ -8,7 +8,7 @@ S2H_INTERFACES = MyDutRequest:MyDut.request
 H2S_INTERFACES = MyDut:MyDutIndication:host
 
 # FILES
-BSVFILES = Top_Pins.bsv MyDut.bsv
+BSVFILES = Top_Pins.bsv MyDut.bsv 
 CPPFILES = connectal_test.cpp
 
 # add BSV directories other than the current directory (space between entries)

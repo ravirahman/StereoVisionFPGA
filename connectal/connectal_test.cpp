@@ -1,4 +1,11 @@
 #include <stdio.h>
+#include <vector>
+
+#include <EasyBMP.h>
+#include <fixed_point/fixed_point.hpp>
+
+#include "types.hpp"
+#include "StereoVisionSinglePoint.hpp"
 #include <stdint.h>
 #include <sys/stat.h>
 #include <pthread.h>
@@ -22,14 +29,14 @@ class MyDutIndication : public MyDutIndicationWrapper
 {
 public:
     // You have to define all the functions (indication methods) defined in MyDutIndication
-    virtual void returnOutputDDR(DRAM_Line data) {
-        printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
-                , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
+    //virtual void returnOutputDDR(DRAM_Line data) {
+    //    printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
+    //            , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
 
-        pthread_mutex_lock(&lock);
-        num_req_sent--;
-        pthread_mutex_unlock(&lock);
-    }
+    //    pthread_mutex_lock(&lock);
+    //    num_req_sent--;
+    //    pthread_mutex_unlock(&lock);
+    //}
 
 
     virtual void returnOutputSV(Dist_List data) {
@@ -46,6 +53,30 @@ public:
 };
 
 void run_test_bench(){
+
+    // THe very first thing is loading the images into the FPGA memory
+    BMP left_img;
+    bool result = left_img.ReadFromFile("../sample_images/0_left.bmp");
+    if (!result) {
+         fprintf(stderr, "Failed to read left image from filepath\n");
+         exit(1);
+    }
+    BMP right_img;
+    result = right_img.ReadFromFile("../sample_images/0_right.bmp");
+    if (!result) {
+        fprintf(stderr, "Failed to read right image from filepath\n");
+        exit(1);
+    }    
+
+    for (long r = 0; r < IMAGE_HEIGHT; r++) {
+        for (long c = 0; c < IMAGE_WIDTH; c++) {
+            
+            const RGBApixel& pixel = _image.GetPixel(c, r);
+            //assert(r*M+c < (long) _blocks.max_size());
+            pixel.Red, pixel.Green, pixel.Blue };
+        }
+    }
+	
     pthread_mutex_init(&lock, NULL);
 
     for (uint32_t i = 0; i < 10; i++) {
