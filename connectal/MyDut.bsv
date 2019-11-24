@@ -170,7 +170,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             ddr3_user.request.put(req);
         endmethod
         
-	method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
+        method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
             // read request
             let req = DDR3_LineReq{ write: False, line_addr: truncate(line_addr), data_in: 0};
             ddr3_user.request.put(req);

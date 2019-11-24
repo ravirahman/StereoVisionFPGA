@@ -33,8 +33,9 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixels
 	FIFO#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) outFIFO <- mkFIFO();
 
 	function DDR3_Addr getDDR3AddrFromXYPoint(XYPoint#(pb) point);
-		let rowMajorLoc = point.y * fromInteger(valueOf(imageWidth)) + point.x;
-		let dramRow = pack(rowMajorLoc) >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))));  // division
+		UInt#(26) rowMajorLoc = zeroExtend(point.y) * fromInteger(valueOf(imageWidth));
+		rowMajorLoc = rowMajorLoc + zeroExtend(point.x);
+		DDR3_Addr dramRow = pack(rowMajorLoc) >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))));  // division
 		return zeroExtend(dramRow);
 	endfunction
 
@@ -59,12 +60,14 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixels
 	rule requestFromDRAM (True);
 		let xy = inFIFO.first();
 		if (currentReqDx == 0 && currentReqDy == 0) begin
+			// $display("Ruesting cachelines from dram for point", fshow(xy));
 			poiFIFO.enq(xy);
 		end
 		XYPoint#(pb) poi;
 		poi.x = xy.x + currentReqDx;
 		poi.y = xy.y + currentReqDy;
 		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
+		// $display($format("Requesting address %d for point", location, fshow(poi)));
 		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
 		ddr3_user.request.put(req);
 		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
@@ -74,6 +77,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixels
 			currentReqDy <= currentReqDy + 1;
 		end else begin
 			inFIFO.deq();
+			// $display("Finished request");
 			currentReqDx <= 0;
 			currentReqDy <= 0;
 		end
@@ -83,21 +87,32 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(imageWidth, pb, npixels
 		let poi = poiFIFO.first();
 		let resp <- ddr3_user.response.get();
 		let drampoint = getXYPointFromDDR3Addr(resp.line_addr);
+		// $display($format("Processing response for address %d in context of poi", resp.line_addr, fshow(poi)));
+		// $display("Calculated point for start of block", fshow(drampoint));
 		Integer j = 0;
 		for (Integer i = 0; i < valueOf(NumPixelsPerLine#(pd, pixelWidth)); i = i + 1) begin
 			// do we want this pixel?
-			if (poi.x <= drampoint.x + fromInteger(i) && drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst)) && drampoint.y <= poi.y && drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
-				let startI = i * valueOf(TMul#(pd, pixelWidth));
-				let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
-				let pixelAsBytes = resp.data_out[endI:startI];
-				Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
-				let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
-				blockReg[blockPixelI] <= tagged Valid pixel;
+			if (poi.x <= drampoint.x + fromInteger(i)) begin
+				if (drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst))) begin
+					if (poi.y <= drampoint.y) begin
+						if (drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
+							// $display("keeping pixel at (%d,%d)", drampoint.x + fromInteger(i), drampoint.y);
+							let startI = i * valueOf(TMul#(pd, pixelWidth));
+							let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+							let pixelAsBytes = resp.data_out[endI:startI];
+							Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
+							// $display("pixel value: ", fshow(pixel));
+							let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
+							blockReg[blockPixelI] <= tagged Valid pixel;
+						end
+					end
+				end
 			end
 		end
 	endrule
 
 	rule finishProcessing (areAllValid());
+		// $display("Finishing and returning");
 		Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
 		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
 			answer[i] = fromMaybe(replicate(0), blockReg[i]);

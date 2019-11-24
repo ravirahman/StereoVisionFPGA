@@ -7,7 +7,7 @@ import FixedPoint::*;
 typedef 8 PB;
 
 // dimension of a pixel. must be a power of 2. Will usually be either 1 (greyscale) or 4 (color), where the last dimension is ignored.
-typedef 1 PD;
+typedef 4 PD;
 
 // Number of bits for the integer part of the fixed point number giving the real world distance
 typedef 16 FPBI;
@@ -21,7 +21,7 @@ typedef 8 PIXELWIDTH;
 typedef 5 NPIXELS;
 
 
-typedef 188 IMAGEWIDTH;
+typedef 208 IMAGEWIDTH;  // must be a multiple of 16
 
 // Number of Single Points that we calculate in parallel
 typedef 2 N;

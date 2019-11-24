@@ -26,12 +26,14 @@ typedef struct {
 typedef Server#(DDR3_LineReq, DDR3_LineRes) DDR3_6375User;
 
 module mkDDR3WrapperSim#(DDR3_User_VC707_1GB ddr_usr) (DDR3_6375User);
-    FIFO#(DDR3_Addr) lineAddrFIFO <- mkFIFO();
+    FIFO#(DDR3_Addr) lineAddrFIFO <- mkSizedFIFO(1024);
 
     interface Put request;
         method Action put(DDR3_LineReq req);
             ddr_usr.request({req.line_addr, 3'b0}, (req.write)?-1:0, req.data_in);
-            lineAddrFIFO.enq(req.line_addr);
+            if (req.write == False) begin
+                lineAddrFIFO.enq(req.line_addr);
+            end
         endmethod
     endinterface
 
@@ -70,7 +72,9 @@ module mkDDR3WrapperSync#(DDR3_User_VC707_1GB ddr_usr) (DDR3_6375User);
     interface Put request;
         method Action put(DDR3_LineReq req);
             reqSync.enq(req);
-            lineAddrFIFO.enq(req.line_addr);
+            if (req.write == False) begin
+                lineAddrFIFO.enq(req.line_addr);
+            end
         endmethod
     endinterface
 
