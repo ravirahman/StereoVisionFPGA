@@ -2,10 +2,10 @@
 #include <vector>
 
 #include <EasyBMP.h>
-#include <fixed_point/fixed_point.hpp>
+//#include <fixed_point/fixed_point.hpp>
 
-#include "types.hpp"
-#include "StereoVisionSinglePoint.hpp"
+//#include "types.hpp"
+//#include "StereoVisionSinglePoint.hpp"
 #include <stdint.h>
 #include <sys/stat.h>
 #include <pthread.h>
@@ -21,7 +21,6 @@ size_t gotcount = 0;
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
 pthread_mutex_t lock;
-size_t num_req_sent = 0;
 size_t num_req_dist = 0;
 
 // The seperate thread in charge of indications invokes these call-back functions
@@ -29,6 +28,8 @@ class MyDutIndication : public MyDutIndicationWrapper
 {
 public:
     // You have to define all the functions (indication methods) defined in MyDutIndication
+
+    // In principle we don't need this.
     //virtual void returnOutputDDR(DRAM_Line data) {
     //    printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
     //            , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
@@ -39,11 +40,12 @@ public:
     //}
 
 
-    virtual void returnOutputSV(Dist_List data) {
+    virtual void returnOutputSV( bsvvector_Luint32_t_L2 real_xs, bsvvector_Luint32_t_L2 real_ys, bsvvector_Luint32_t_L2 real_zs ) {
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
-        printf("Received distance 0: %d\n", data.dist0);
-        printf("Received distance 1: %d\n", data.dist1);
+        printf("Distances Received");
+	//printf("Received distances 0: %d\n", );
+        //printf("Received distance 1: %d\n", data.realys);
         pthread_mutex_lock(&lock);
         num_req_dist--;
         pthread_mutex_unlock(&lock);
@@ -52,9 +54,9 @@ public:
     MyDutIndication(unsigned int id) : MyDutIndicationWrapper(id) {}
 };
 
-void run_test_bench(){
-
-    // THe very first thing is loading the images into the FPGA memory
+void load_images(){
+    
+    // First of all, get the two images
     BMP left_img;
     bool result = left_img.ReadFromFile("../sample_images/0_left.bmp");
     if (!result) {
@@ -68,44 +70,83 @@ void run_test_bench(){
         exit(1);
     }    
 
+    // Now load the reference image into the DRAM
+    
+    uint32_t ref_address = 0;
+
     for (long r = 0; r < IMAGE_HEIGHT; r++) {
         for (long c = 0; c < IMAGE_WIDTH; c++) {
             
-            const RGBApixel& pixel = _image.GetPixel(c, r);
+            const RGBApixel& pixel = left_image.GetPixel(c, r);
+            uint32_t pixel_bits = pixel.Red<<32 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
             //assert(r*M+c < (long) _blocks.max_size());
-            pixel.Red, pixel.Green, pixel.Blue };
+            //pixel.Red, pixel.Green, pixel.Blue };
         }
+
+        // Once we have the whole DRAM line, load it
+        device->loadDRAM(ref_address, data);
+        ref_address = ref_address + 1;
+    }
+
+
+    // Now load the compare image into the DRAM
+    
+    uint32_t comp_address = COMP_BLOCK_DRAM_OFFSET;
+
+    for (long r = 0; r < IMAGE_HEIGHT; r++) {
+        for (long c = 0; c < IMAGE_WIDTH; c++) {
+            
+            const RGBApixel& pixel = right_image.GetPixel(c, r);
+            uint32_t pixel_bits = pixel.Red<<32 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
+            //assert(r*M+c < (long) _blocks.max_size());
+            //pixel.Red, pixel.Green, pixel.Blue };
+        }
+
+        // Once we have the whole DRAM line, load it
+        device->loadDRAM(comp_address, data);
+        comp_address = comp_address + 1;
     }
 	
     pthread_mutex_init(&lock, NULL);
 
-    for (uint32_t i = 0; i < 10; i++) {
-        DRAM_Line data = { 0, 0, 0, 0, 0, 0, 0, i }; // each item is uint64_t 
-        printf("Sent write request [Line Addr: %d] [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n",
-                i,
-                data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
-        device->loadDRAM(i, data);
-    }
+}
 
-    for (uint32_t i = 0; i < 10; i++) {
-        pthread_mutex_lock(&lock);
-        num_req_sent++;
-        pthread_mutex_unlock(&lock);
 
-        printf("Sent read request [Line Addr: %d]\n", i);
-        device->readDRAM(i);
-    }
 
-    
+
+
+void request_points(){
+
+    // Here, we will request points on the image. For now, we are making this points up.
+
     for (uint32_t i = 0; i < 10; i++) {
         pthread_mutex_lock(&lock);
         num_req_dist++;
         pthread_mutex_unlock(&lock);
-        Point_Coords p = {1, 10, 0, 10};
+        bsvvector_Luint6_t_L2 xs;
+        bsvvector_Luint6_t_L2 ys;
+        xs[0] = 150;
+        xs[1] = 10;
+        ys[0] = 20;
+        ys[1] = 45; 
         printf("Sent distance request");
-        device->requestPoints(p);
+        device->requestPoints(xs, ys);
     }
 
+}
+
+
+
+
+void run_test_bench(){
+
+    // The very first thing is loading the images into the FPGA memory
+    load_images();
+
+    // Once the images are loaded, we just need to request the points
+    request_points();   
+
+    // Wait until we retrieve all the points we requested 
     struct timespec one_ms = {0, 1000000};
     pthread_mutex_lock(&lock);
     while (num_req_sent != 0) {
@@ -117,7 +158,10 @@ void run_test_bench(){
 
     pthread_mutex_destroy(&lock);
     printf("run_test_bench finished!\n");
+
 }
+
+
 
 int main (int argc, const char **argv)
 {

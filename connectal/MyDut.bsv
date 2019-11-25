@@ -10,7 +10,7 @@ import FixedPoint::*;
 import Types::*;
 import StereoVisionMultiplePoints::*;
 import Types::*;
-import StereoVisionSinglePoint::*;
+//import StereoVisionSinglePoint::*;
 import ClientServer::*;
 import GetPut::*;
 import Pixel::*;
@@ -53,37 +53,38 @@ typedef struct{
 //    Vector#(N, Bit#(PB)) xs;
 //    Vector#(N, Bit#(PB)) ys;
 //} Point_Coords deriving (Bits);
-typedef struct{
-    Vector#(2, Bit#(6)) xs;
-    Vector#(2, Bit#(6)) ys;
-} Point_Coords deriving (Bits);
+
+//typedef struct{
+//    Vector#(2, Bit#(6)) xs;
+//    Vector#(2, Bit#(6)) ys;
+//} Point_Coords deriving (Bits);
 
 // Struct to get back multiple distances in parallel. The number of
 // distances in parallel is equal to the number of StereoVisionSinglePoint
 // modules we have in parallel 
 //typedef struct{
-//    Vector#(N, TAdd#(FPBI, FPBF)) real_xs;
-//    Vector#(N, TAdd#(FPBI, FPBF)) real_ys;
-//    Vector#(N, TAdd#(FPBI, FPBF)) real_zs;
+//    Vector#(N, Bit#(TAdd#(FPBI, FPBF))) real_xs;
+//    Vector#(N, Bit#(TAdd#(FPBI, FPBF))) real_ys;
+//    Vector#(N, Bit#(TAdd#(FPBI, FPBF))) real_zs;
 //} Dist_List deriving (Bits);
 
-typedef struct{
-    Vector#(2, 16) real_xs;
-    Vector#(2, 16) real_ys;
-    Vector#(2, 16) real_zs;
-} Dist_List deriving (Bits);
+//typedef struct{
+//    Vector#(2, Bit#(32)) real_xs;
+//    Vector#(2, Bit#(32)) real_ys;
+//    Vector#(2, Bit#(32)) real_zs;
+//} Dist_List deriving (Bits);
 
 
 // interface used by software
 interface MyDutRequest;
     
-    method Action readDRAM (Bit#(32) line_addr);
+    //method Action readDRAM (Bit#(32) line_addr);
     
     // This method will be used to load the images onto the DRAM
     method Action loadDRAM (Bit#(32) line_addr, DRAM_Line line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints (Point_Coords points);
+    method Action requestPoints ( Vector#(2, Bit#(6)) xs, Vector#(2, Bit#(6)) ys);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -93,7 +94,8 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    method Action returnOutputSV (Dist_List distances);
+    //method Action returnOutputSV (Dist_List distances);
+    method Action returnOutputSV (Vector#(2, Bit#(32)) xs, Vector#(2, Bit#(32)) ys, Vector#(2, Bit#(32)) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
@@ -118,9 +120,6 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
         if (resetCnt == 3) isResetting <= False;
     endrule
 
-    /////////////////////////
-    // Your design
-    /////////////////////////
 
     /////////////////////////
     // DRAM instantitation: ddr3_user (Does not need to be reset, just overwrite new data)
@@ -145,13 +144,16 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     DDR3_6375User ddr3_user <- mkDDR3WrapperSync(ddr3_ctrl_200mhz.user);
 `endif
 
-    //StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
-    StereoVisionMultiplePoints#(N, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, real_world_cte);
-
-
     // DDR3_6375User definition in DDR3User.bsv
     // DDR3_LineReq definition in DDR3User.bsv
     //  see the rule / methods below to learn how to use 'ddr3_user' module
+
+    /////////////////////////
+    // Your design
+    /////////////////////////
+    
+    //StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, real_world_cte);
+    StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, focal_dist, real_world_cte);
 
 
     // SW and HW methods
@@ -164,18 +166,18 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     //endrule
 
     rule indicationToSoftwareSV;
-        let d <- svmp.getDistances();
+        let d <- svmp.response.get();
 	Vector#(N, TAdd#(FPBI, FPBF)) xs = newVector;
 	Vector#(N, TAdd#(FPBI, FPBF)) ys = newVector;
 	Vector#(N, TAdd#(FPBI, FPBF)) zs = newVector;
      	for (Integer i = 0; i < N; i = i+1) begin
 	    let pt = d[i];
-	    xs[i] = pack(pt.x);
-	    ys[i] = pack(pt.y);
-	    zs[i] = pack(pt.z);
+	    xs[i] = pack(pt[0]);
+	    ys[i] = pack(pt[1]);
+	    zs[i] = pack(pt[2]);
 	end
-	let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
-        indication.returnOutputSV(a); 
+	//let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
+        indication.returnOutputSV(xs, ys, zs); 
     endrule
     
     // Interface used by software (MyDutRequest)
@@ -197,17 +199,14 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             isResetting <= True;
         endmethod
         
-	method Action requestPoints (Point_Coords points) if (!isResetting); 
-            let x_points = points.xs;
-            let y_points = points.ys;
-	    Vector#(N, UInt#(PB)) xs = newVector();
-            Vector#(N, UInt#(PB)) ys = newVector();
+	method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting); 
+            Vector#(N, XYPoint#(PB)) points_vec = newVector();
      	    for (Integer i = 0; i < N; i = i+1) begin
-	       xs[i] = pack(x_points[i]);
-	       ys[i] = pack(y_points[i]);
+	       XYPont#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
+               points_vec[i] = pt;
 	    end
 	    
-	    svmp.putImagePoints(xs, ys);
+	    svmp.request.put(points_vect);
         endmethod
     endinterface
 

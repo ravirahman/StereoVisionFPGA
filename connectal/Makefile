@@ -9,7 +9,7 @@ H2S_INTERFACES = MyDut:MyDutIndication:host
 
 # FILES
 BSVFILES = Top_Pins.bsv MyDut.bsv ../bluespec/Types.bsv
-CPPFILES = connectal_test.cpp
+CPPFILES = connectal_test.cpp 
 
 # add BSV directories other than the current directory (space between entries)
 BSVPATH += $(DDR3_DIR) ../bluespec
@@ -17,6 +17,8 @@ BSVPATH += $(DDR3_DIR) ../bluespec
 # Connectal Flags (125 MHz clock)
 CONNECTALFLAGS += --mainclockperiod 8 --bscflags " -u --keep-fires -u -show-schedule "
 CONNECTALFLAGS += --bscflags " -steps-max-intervals 50 +RTS -K256M -RTS"
+CONNECTALFLAGS += --cflags " -I./easyBMP/ "
+#CONNECTALFLAGS += --clib " ../easyBMP/ "
 
 # Additional Connectal Flags for DRAM pins & clocks
 CONNECTALFLAGS += -D IMPORT_HOSTIF -D XILINX_SYS_CLK
