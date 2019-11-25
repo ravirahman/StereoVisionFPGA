@@ -15,9 +15,10 @@ CPPFILES = connectal_test.cpp
 BSVPATH += $(DDR3_DIR) ../bluespec
 
 # Connectal Flags (125 MHz clock)
+CONNECTALFLAGS += -I ../easyBMP/ 
 CONNECTALFLAGS += --mainclockperiod 8 --bscflags " -u --keep-fires -u -show-schedule "
 CONNECTALFLAGS += --bscflags " -steps-max-intervals 50 +RTS -K256M -RTS"
-CONNECTALFLAGS += --cflags " -I./easyBMP/ "
+CONNECTALFLAGS += --cflags=-Wno-error
 #CONNECTALFLAGS += --clib " ../easyBMP/ "
 
 # Additional Connectal Flags for DRAM pins & clocks

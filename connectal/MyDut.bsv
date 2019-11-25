@@ -81,10 +81,10 @@ interface MyDutRequest;
     //method Action readDRAM (Bit#(32) line_addr);
     
     // This method will be used to load the images onto the DRAM
-    method Action loadDRAM (Bit#(32) line_addr, DRAM_Line line_data);
+    method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints ( Vector#(2, Bit#(6)) xs, Vector#(2, Bit#(6)) ys);
+    method Action requestPoints ( Vector#(2, Bit#(8)) xs, Vector#(2, Bit#(8)) ys);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -96,6 +96,8 @@ interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
     //method Action returnOutputSV (Dist_List distances);
     method Action returnOutputSV (Vector#(2, Bit#(32)) xs, Vector#(2, Bit#(32)) ys, Vector#(2, Bit#(32)) zs);
+    //method Action returnOutputSV (Vector#(2, Bit#(32)) xs);
+    //method Action returnOutputSV ( Bit#(32) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
@@ -167,10 +169,10 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
 
     rule indicationToSoftwareSV;
         let d <- svmp.response.get();
-	Vector#(N, TAdd#(FPBI, FPBF)) xs = newVector;
-	Vector#(N, TAdd#(FPBI, FPBF)) ys = newVector;
-	Vector#(N, TAdd#(FPBI, FPBF)) zs = newVector;
-     	for (Integer i = 0; i < N; i = i+1) begin
+	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) xs = newVector;
+	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) ys = newVector;
+	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) zs = newVector;
+     	for (Integer i = 0; i < valueOf(N); i = i+1) begin
 	    let pt = d[i];
 	    xs[i] = pack(pt[0]);
 	    ys[i] = pack(pt[1]);
@@ -178,11 +180,13 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
 	end
 	//let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
         indication.returnOutputSV(xs, ys, zs); 
+        //indication.returnOutputSV(xs); 
+        //indication.returnOutputSV(xs[0]); 
     endrule
     
     // Interface used by software (MyDutRequest)
     interface MyDutRequest request;
-        method Action loadDRAM (Bit#(32) line_addr, DRAM_Line line_data) if (!isResetting);
+        method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data) if (!isResetting);
             // write request (no response)
             let req = DDR3_LineReq{ write: True, line_addr: truncate(line_addr), data_in: pack(line_data)};
             ddr3_user.request.put(req);
@@ -199,14 +203,14 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             isResetting <= True;
         endmethod
         
-	method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting); 
+	method Action requestPoints (Vector#(N, Bit#(8)) xs, Vector#(N, Bit#(8)) ys) if (!isResetting); 
             Vector#(N, XYPoint#(PB)) points_vec = newVector();
-     	    for (Integer i = 0; i < N; i = i+1) begin
-	       XYPont#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
+     	    for (Integer i = 0; i < valueOf(N); i = i+1) begin
+	       XYPoint#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
                points_vec[i] = pt;
 	    end
 	    
-	    svmp.request.put(points_vect);
+	    svmp.request.put(points_vec);
         endmethod
     endinterface
 

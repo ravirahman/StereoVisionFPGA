@@ -91,15 +91,15 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		bp.compBlock = c;
 		if (referenceBlockStored == False) begin
 			let b <- loadRefBlock.response.get();
-			$display("Ref Block: ", b);
+			//$display("Ref Block: ", b);
 			bp.refBlock = b;
 			refBlock <= b;
 			referenceBlockStored <= True;
 		end else begin
 			bp.refBlock = refBlock;
-			$display("Ref Block: ", refBlock);
+			//$display("Ref Block: ", refBlock);
 		end		
-		$display("Comp block: ", c);
+		//$display("Comp block: ", c);
 		cs.request.put(bp);
 	endrule
 

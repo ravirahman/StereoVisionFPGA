@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <vector>
 
-#include <EasyBMP.h>
+#include "EasyBMP.h"
 //#include <fixed_point/fixed_point.hpp>
 
 //#include "types.hpp"
@@ -18,7 +18,7 @@ static MyDutRequestProxy *device = 0;
 size_t putcount = 0;
 size_t gotcount = 0;
 int NUM_PIXELS_PER_DRAM_LINE = 16;
-
+int COMP_BLOCK_DRAM_OFFSET = 16384;
 
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
@@ -40,9 +40,8 @@ public:
     //    num_req_sent--;
     //    pthread_mutex_unlock(&lock);
     //}
-
-
-    virtual void returnOutputSV( bsvvector_Luint32_t_L2 real_xs, bsvvector_Luint32_t_L2 real_ys, bsvvector_Luint32_t_L2 real_zs ) {
+    virtual void returnOutputSV(const bsvvector_Luint32_t_L2 xs, const bsvvector_Luint32_t_L2 ys, const bsvvector_Luint32_t_L2 zs) {
+        //bsvvector_Luint32_t_L2 xs, bsvvector_Luint32_t_L2 ys, bsvvector_Luint32_t_L2 zs
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
         printf("Distances Received");
@@ -55,6 +54,55 @@ public:
     // Required
     MyDutIndication(unsigned int id) : MyDutIndicationWrapper(id) {}
 };
+
+
+
+void load_single_image(BMP img, uint32_t address_offset){
+    
+    uint32_t address = address_offset;
+  
+    int num_rows = img.TellHeight();
+    int num_cols = img.TellWidth();
+    int cols_padded = num_cols%16; 
+    int counter = 0;
+    bsvvector_Luint32_t_L16 data;
+    printf("The image is %dx%d pixels\n", num_rows, num_cols); 
+    printf("Start of load image is at address %d\n", address);
+    for (long r = 0; r < num_rows; r++) {
+        for (long c = 0; c < num_cols; c++) {
+
+                const RGBApixel& pixel = img.GetPixel(c, r);
+                uint32_t pixel_bits = pixel.Red<<24 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
+                data[counter] = pixel_bits;
+		counter = counter + 1;
+
+	        if (counter == NUM_PIXELS_PER_DRAM_LINE) {
+        		// Once we have the whole DRAM line, load it
+        		device->loadDRAM(address, data);
+        		address = address + 1;
+                        counter = 0;
+			//printf("Image loaded in address %d \n", address-1);		
+                      
+	        }
+        }
+	
+        // If the number of columns is not a multiple of 16, we need to pad and load the last DRAM line
+        if (cols_padded != 0) {
+        	device->loadDRAM(address, data);
+        	address = address + 1;
+                counter = 0;
+		//printf("Image loaded in address %d \n", address-1);		
+	
+	}
+
+    }
+
+    printf("End of load image is at address %d\n", address);
+
+}
+
+
+
 
 void load_images(){
     
@@ -80,45 +128,6 @@ void load_images(){
 }
 
 
-void load_single_image(BMP img, uint32_t address_offset){
-    
-    uint32_t address = address_offset;
-  
-    int num_rows = img.TellHeight();
-    int num_cols = img.TellWidth();
-    int cols_padded = num_cols%16; 
-    int counter = 0;
-    uint512_t data = 0;
-
-    for (long r = 0; r < num_rows; r++) {
-        for (long c = 0; c < num_cols; c++) {
-
-                const RGBApixel& pixel = img.GetPixel(c, r);
-                uint32_t pixel_bits = pixel.Red<<24 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
-                data = data | pixel_bits<<counter*32;
-		counter = counter + 1;
-
-	        if (counter == NUM_PIXELS_PER_DRAM_LINE) {
-        		// Once we have the whole DRAM line, load it
-        		device->loadDRAM(address, data);
-        		address = address + 1;
-                        counter = 0;
-			data = 0;
-                      
-	        }
-        }
-	
-        // If the number of columns is not a multiple of 16, we need to pad and load the last DRAM line
-        if (cols_padded != 0) {
-        	device->loadDRAM(ref_address, data);
-        	address = address + 1;
-                counter = 0;
-		data = 0;
-	}
-
-    }
-
-}
 
 
 void request_points(){
@@ -129,13 +138,13 @@ void request_points(){
         pthread_mutex_lock(&lock);
         num_req_dist++;
         pthread_mutex_unlock(&lock);
-        bsvvector_Luint6_t_L2 xs;
-        bsvvector_Luint6_t_L2 ys;
-        xs[0] = 150;
-        xs[1] = 10;
-        ys[0] = 20;
-        ys[1] = 45; 
-        printf("Sent distance request");
+        bsvvector_Luint8_t_L2 xs;
+        bsvvector_Luint8_t_L2 ys;
+        xs[0] = 124;
+        xs[1] = 200;
+        ys[0] = 160;
+        ys[1] = 180; 
+        printf("Sent distance request for points (x0,y0) = (%d, %d) and (x1,y1) = (%d, %d) \n", xs[0], ys[0], xs[1], ys[1]);
         device->requestPoints(xs, ys);
     }
 
@@ -155,7 +164,7 @@ void run_test_bench(){
     // Wait until we retrieve all the points we requested 
     struct timespec one_ms = {0, 1000000};
     pthread_mutex_lock(&lock);
-    while (num_req_sent != 0) {
+    while (num_req_dist != 0) {
         pthread_mutex_unlock(&lock);
         nanosleep(&one_ms , NULL);
         pthread_mutex_lock(&lock);

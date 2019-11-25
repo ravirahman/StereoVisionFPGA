@@ -4,7 +4,7 @@
 import FixedPoint::*;
 
 // Number of bits to specify the image point coordinates (both x and y)
-typedef 6 PB;
+typedef 8 PB;
 
 // dimension of a pixel. must be a power of 2. Will usually be either 1 (greyscale) or 4 (color), where the last dimension is ignored.
 typedef 4 PD;
@@ -24,7 +24,7 @@ typedef 5 NPIXELS;
 typedef 208 IMAGEWIDTH;  
 
 // ref block is stored starting at address 0. comp block is stored starting at this address.
-typedef 8192 COMP_BLOCK_DRAM_OFFSET; 
+typedef 16384 COMP_BLOCK_DRAM_OFFSET; 
 
 // Number of Single Points that we calculate in parallel
 typedef 2 N;
