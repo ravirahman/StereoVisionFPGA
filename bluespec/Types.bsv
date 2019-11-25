@@ -20,10 +20,11 @@ typedef 8 PIXELWIDTH;
 // Number of pixels contained in a block in one dimension
 typedef 5 NPIXELS;
 
+// must be a multiple of 16
+typedef 208 IMAGEWIDTH;  
 
-typedef 208 IMAGEWIDTH;  // must be a multiple of 16
-
-typedef 8192 COMP_BLOCK_DRAM_OFFSET;  // ref block is stored starting at address 0. comp block is stored starting at this address.
+// ref block is stored starting at address 0. comp block is stored starting at this address.
+typedef 8192 COMP_BLOCK_DRAM_OFFSET; 
 
 // Number of Single Points that we calculate in parallel
 typedef 2 N;
