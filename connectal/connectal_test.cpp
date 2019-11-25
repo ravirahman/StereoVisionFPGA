@@ -17,6 +17,8 @@ static MyDutRequestProxy *device = 0;
 
 size_t putcount = 0;
 size_t gotcount = 0;
+int NUM_PIXELS_PER_DRAM_LINE = 16;
+
 
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
@@ -63,56 +65,60 @@ void load_images(){
          fprintf(stderr, "Failed to read left image from filepath\n");
          exit(1);
     }
+
     BMP right_img;
     result = right_img.ReadFromFile("../sample_images/0_right.bmp");
     if (!result) {
         fprintf(stderr, "Failed to read right image from filepath\n");
         exit(1);
     }    
-
-    // Now load the reference image into the DRAM
-    
-    uint32_t ref_address = 0;
-
-    for (long r = 0; r < IMAGE_HEIGHT; r++) {
-        for (long c = 0; c < IMAGE_WIDTH; c++) {
-            
-            const RGBApixel& pixel = left_image.GetPixel(c, r);
-            uint32_t pixel_bits = pixel.Red<<32 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
-            //assert(r*M+c < (long) _blocks.max_size());
-            //pixel.Red, pixel.Green, pixel.Blue };
-        }
-
-        // Once we have the whole DRAM line, load it
-        device->loadDRAM(ref_address, data);
-        ref_address = ref_address + 1;
-    }
-
-
-    // Now load the compare image into the DRAM
-    
-    uint32_t comp_address = COMP_BLOCK_DRAM_OFFSET;
-
-    for (long r = 0; r < IMAGE_HEIGHT; r++) {
-        for (long c = 0; c < IMAGE_WIDTH; c++) {
-            
-            const RGBApixel& pixel = right_image.GetPixel(c, r);
-            uint32_t pixel_bits = pixel.Red<<32 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
-            //assert(r*M+c < (long) _blocks.max_size());
-            //pixel.Red, pixel.Green, pixel.Blue };
-        }
-
-        // Once we have the whole DRAM line, load it
-        device->loadDRAM(comp_address, data);
-        comp_address = comp_address + 1;
-    }
-	
+    load_single_image(left_img, 0);
+    load_single_image(right_img, COMP_BLOCK_DRAM_OFFSET);
+   
     pthread_mutex_init(&lock, NULL);
 
 }
 
 
+void load_single_image(BMP img, uint32_t address_offset){
+    
+    uint32_t address = address_offset;
+  
+    int num_rows = img.TellHeight();
+    int num_cols = img.TellWidth();
+    int cols_padded = num_cols%16; 
+    int counter = 0;
+    uint512_t data = 0;
 
+    for (long r = 0; r < num_rows; r++) {
+        for (long c = 0; c < num_cols; c++) {
+
+                const RGBApixel& pixel = img.GetPixel(c, r);
+                uint32_t pixel_bits = pixel.Red<<24 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
+                data = data | pixel_bits<<counter*32;
+		counter = counter + 1;
+
+	        if (counter == NUM_PIXELS_PER_DRAM_LINE) {
+        		// Once we have the whole DRAM line, load it
+        		device->loadDRAM(address, data);
+        		address = address + 1;
+                        counter = 0;
+			data = 0;
+                      
+	        }
+        }
+	
+        // If the number of columns is not a multiple of 16, we need to pad and load the last DRAM line
+        if (cols_padded != 0) {
+        	device->loadDRAM(ref_address, data);
+        	address = address + 1;
+                counter = 0;
+		data = 0;
+	}
+
+    }
+
+}
 
 
 void request_points(){
