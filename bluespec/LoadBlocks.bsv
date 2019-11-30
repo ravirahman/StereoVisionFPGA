@@ -9,10 +9,12 @@ import Assert::*;
 
 typedef TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)) NumPixelsPerLine#(numeric type pd, numeric type pixelWidth);
 
-typedef Server#(
-	XYPoint#(pb),
-	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))
-) LoadBlocks#(numeric type dramOffset, numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
+interface LoadBlocks#(numeric type dramOffset, numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
+	interface Put#(XYPoint#(pb)) request;
+	interface Get#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) response;
+	method Action setMemoryStatus(Bool memoryStatus);
+	method Bool getMemoryStatus();
+endinterface
 
 module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth, pb, npixelst, pd, pixelWidth) ifc)
 	provisos(
@@ -25,6 +27,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 
 	Reg#(UInt#(pb)) currentReqDx <- mkReg(0);
 	Reg#(UInt#(pb)) currentReqDy <- mkReg(0);
+	Reg#(Bool) memoryLoaded <- mkReg(False);
 
 	Maybe#(Pixel#(pd, pixelWidth)) invalidPixel = tagged Invalid;
 	
@@ -57,7 +60,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		return allValid;
 	endfunction
 
-	rule requestFromDRAM (True);
+	rule requestFromDRAM if (memoryLoaded);
 		let xy = inFIFO.first();
 		if (currentReqDx == 0 && currentReqDy == 0) begin
 			// $display("Ruesting cachelines from dram for point", fshow(xy));
@@ -121,6 +124,14 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		outFIFO.enq(answer);
 		poiFIFO.deq();
 	endrule
+
+	method Action setMemoryStatus(Bool memoryStatus);
+		memoryLoaded <= memoryStatus;
+	endmethod
+
+	method Bool getMemoryStatus();
+		return memoryLoaded;
+	endmethod
 
 	interface Put request = toPut(inFIFO);
 	interface Get response = toGet(outFIFO);
