@@ -20,6 +20,7 @@ interface Top_Pins;
 endinterface
 
 typedef Vector#(TMul#(NPIXELS, NPIXELS), Pixel#(PD, PIXELWIDTH)) Block;
+typedef 100 NUM_SAMPLES;
 
 module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
@@ -29,8 +30,8 @@ module mkTest();
 
 	LoadBlocks#(0, IMAGEWIDTH, PB, NPIXELS, PD, PIXELWIDTH) loadBlocks <- mkLoadBlocks(ddr3_user);
 	Reg#(Bool) passed <- mkReg(True);
-	Reg#(Bit#(4)) feed <- mkReg(0);
-    Reg#(Bit#(4)) check <- mkReg(0);
+	Reg#(Bit#(8)) feed <- mkReg(0);
+    Reg#(Bit#(8)) check <- mkReg(0);
     Reg#(Int#(26)) nextBlockToLoad <- mkReg(0);
     
     
@@ -62,7 +63,7 @@ module mkTest();
     Vector#(TDiv#(512, TMul#(PD, PIXELWIDTH)), Pixel#(PD, PIXELWIDTH)) whitePixelLine = replicate(whitePixel);
     Vector#(TDiv#(512, TMul#(PD, PIXELWIDTH)), Pixel#(PD, PIXELWIDTH)) blackPixelLine = replicate(blackPixel);
     
-    rule loadMemory (feed == 0);
+    rule loadMemory (feed == 0 && check == 0 && !loadBlocks.getMemoryStatus);
         DDR3_LineReq req = ?;
         req.write = True;
         req.line_addr = pack(nextBlockToLoad);
@@ -84,6 +85,7 @@ module mkTest();
             // $display("Finished loading memory");
             feed <= feed + 1;
             check <= check + 1;  // nothing to check here
+            loadBlocks.setMemoryStatus(True);
         end
         nextBlockToLoad <= nextBlockToLoad + 1;
         
@@ -92,7 +94,7 @@ module mkTest();
 
 
 
-    // assumes that the image width is a multiple of 16 but not 32 since 16 pixels (32 bits each) are stored in a 512-bit dram line, and that NPIXELS=5
+// assumes that the image width is a multiple of 16 but not 32 since 16 pixels (32 bits each) are stored in a 512-bit dram line, and that NPIXELS=5
 
     XYPoint#(PB) p1;
     p1.x = 0;
@@ -126,14 +128,24 @@ module mkTest();
             
         end
     end
-    rule f0 (feed == 1); dofeed(p1); endrule
-    rule f1 (feed == 2); dofeed(p2); endrule
-    
-    rule c0 (check == 1); docheck(to1); endrule
-    rule c1 (check == 2); docheck(to2); endrule
 
+    rule feed_rule if (feed > 0 && feed < fromInteger(valueOf(NUM_SAMPLES)));
+        if (feed % 2 == 0) begin
+            dofeed(p1);
+        end else begin
+            dofeed(p2);
+        end
+    endrule
 
-    rule finish (feed == 3 && check == 3);
+    rule check_rule if (check > 0 && check < fromInteger(valueOf(NUM_SAMPLES)));
+        if (check % 2 == 0) begin
+            docheck(to1);
+        end else begin
+            docheck(to2);
+        end
+    endrule
+
+    rule finish (feed == fromInteger(valueOf(NUM_SAMPLES)) && check == fromInteger(valueOf(NUM_SAMPLES)));
         if (passed) begin
             $display("PASSED");
         end else begin
