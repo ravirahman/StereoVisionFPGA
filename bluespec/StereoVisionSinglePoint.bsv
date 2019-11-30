@@ -61,7 +61,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 	Reg#(Bool) referenceBlockStored <- mkReg(False); 
 
 	// Modules that make the different operations
-    LoadBlocks#(0, imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(0, imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
 	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
 	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
 	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(focal_distance, real_world_cte);
@@ -83,23 +83,33 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 			loadCompBlock.request.put(p);
 		end
 		loadCounter <= loadCounter + 1;
+                $display("Load Counter is: ", loadCounter);
 	endrule
 
-	rule computeScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
+	rule computeScoreAndLoadRefBlockRule if (compCounter < fromInteger(valueOf(searchArea)) && referenceBlockStored == False);
 		let c <- loadCompBlock.response.get();
 		BlockPair#(npixelst, pd, pixelWidth) bp;
 		bp.compBlock = c;
-		if (referenceBlockStored == False) begin
-			let b <- loadRefBlock.response.get();
-			//$display("Ref Block: ", b);
-			bp.refBlock = b;
-			refBlock <= b;
-			referenceBlockStored <= True;
-		end else begin
-			bp.refBlock = refBlock;
-			//$display("Ref Block: ", refBlock);
-		end		
+		let b <- loadRefBlock.response.get();
+		//$display("Ref Block: ", b);
+		bp.refBlock = b;
+		refBlock <= b;
+		referenceBlockStored <= True;
+	
 		//$display("Comp block: ", c);
+		$display("Comp block put for comparison, loaded ref block");
+		cs.request.put(bp);
+	endrule
+	
+	rule computeScoreAndRetrieveRefBlockRule if (compCounter < fromInteger(valueOf(searchArea)) && referenceBlockStored == True);
+		let c <- loadCompBlock.response.get();
+		BlockPair#(npixelst, pd, pixelWidth) bp;
+		bp.compBlock = c;
+		bp.refBlock = refBlock;
+		//$display("Ref Block: ", refBlock);	
+		
+		//$display("Comp block: ", c);
+		$display("Comp block put for comparison, reusing ref block");
 		cs.request.put(bp);
 	endrule
 
@@ -111,6 +121,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		sd.distance = compCounter;
 		us.request.put(sd);
 		compCounter <= compCounter+1;
+		$display("Comp counter is ", compCounter);
 	endrule
 
 	rule computeRealWorldDistanceRule if (compCounter == fromInteger(valueOf(searchArea)));
@@ -126,7 +137,9 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 
 	rule finishUp if (compCounter == fromInteger(valueOf(TAdd#(searchArea, 1))));
 		let d <- cd.response.get();
-		$display("Computed x,y,z is: ", d);
+		$display("Computed x is: ", fshow(d[0]));
+		$display("Computed y is: ", fshow(d[1]));
+		$display("Computed z is: ", fshow(d[2]));
 		realDistances.enq(d);
 		// Restart the counters
 		$display("Dequeued");

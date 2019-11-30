@@ -84,7 +84,7 @@ interface MyDutRequest;
     method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints ( Vector#(2, Bit#(8)) xs, Vector#(2, Bit#(8)) ys);
+    method Action requestPoints ( Vector#(1, Bit#(8)) xs, Vector#(1, Bit#(8)) ys);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -94,10 +94,7 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    //method Action returnOutputSV (Dist_List distances);
-    method Action returnOutputSV (Vector#(2, Bit#(32)) xs, Vector#(2, Bit#(32)) ys, Vector#(2, Bit#(32)) zs);
-    //method Action returnOutputSV (Vector#(2, Bit#(32)) xs);
-    //method Action returnOutputSV ( Bit#(32) zs);
+    method Action returnOutputSV (Vector#(1, Bit#(32)) xs, Vector#(1, Bit#(32)) ys, Vector#(1, Bit#(32)) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
@@ -168,7 +165,8 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     //endrule
 
     rule indicationToSoftwareSV;
-        let d <- svmp.response.get();
+        let d <- svmp.response.get;
+        $display("Indicating to software");
 	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) xs = newVector;
 	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) ys = newVector;
 	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) zs = newVector;
@@ -203,7 +201,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             isResetting <= True;
         endmethod
         
-	method Action requestPoints (Vector#(N, Bit#(8)) xs, Vector#(N, Bit#(8)) ys) if (!isResetting); 
+	method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting); 
             Vector#(N, XYPoint#(PB)) points_vec = newVector();
      	    for (Integer i = 0; i < valueOf(N); i = i+1) begin
 	       XYPoint#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));

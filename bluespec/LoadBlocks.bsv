@@ -60,14 +60,14 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 	rule requestFromDRAM (True);
 		let xy = inFIFO.first();
 		if (currentReqDx == 0 && currentReqDy == 0) begin
-			// $display("Ruesting cachelines from dram for point", fshow(xy));
+			//$display("Ruesting cachelines from dram for point", fshow(xy));
 			poiFIFO.enq(xy);
 		end
 		XYPoint#(pb) poi;
 		poi.x = xy.x + currentReqDx;
 		poi.y = xy.y + currentReqDy;
 		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
-		// $display($format("Requesting address %d for point", location, fshow(poi)));
+		$display($format("Requesting address %d for point", location, fshow(poi)));
 		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
 		ddr3_user.request.put(req);
 		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
@@ -77,7 +77,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 			currentReqDy <= currentReqDy + 1;
 		end else begin
 			inFIFO.deq();
-			// $display("Finished request");
+			$display("Finished request");
 			currentReqDx <= 0;
 			currentReqDy <= 0;
 		end
@@ -87,7 +87,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		let poi = poiFIFO.first();
 		let resp <- ddr3_user.response.get();
 		let drampoint = getXYPointFromDDR3Addr(resp.line_addr);
-		// $display($format("Processing response for address %d in context of poi", resp.line_addr, fshow(poi)));
+		$display($format("Processing response for address %d in context of poi", resp.line_addr, fshow(poi)));
 		// $display("Calculated point for start of block", fshow(drampoint));
 		Integer j = 0;
 		for (Integer i = 0; i < valueOf(NumPixelsPerLine#(pd, pixelWidth)); i = i + 1) begin
@@ -112,7 +112,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 	endrule
 
 	rule finishProcessing (areAllValid());
-		// $display("Finishing and returning");
+		$display("Finishing and returning");
 		Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
 		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
 			answer[i] = fromMaybe(replicate(0), blockReg[i]);

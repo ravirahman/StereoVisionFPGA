@@ -40,7 +40,7 @@ public:
     //    num_req_sent--;
     //    pthread_mutex_unlock(&lock);
     //}
-    virtual void returnOutputSV(const bsvvector_Luint32_t_L2 xs, const bsvvector_Luint32_t_L2 ys, const bsvvector_Luint32_t_L2 zs) {
+    virtual void returnOutputSV(const bsvvector_Luint32_t_L1 xs, const bsvvector_Luint32_t_L1 ys, const bsvvector_Luint32_t_L1 zs) {
         //bsvvector_Luint32_t_L2 xs, bsvvector_Luint32_t_L2 ys, bsvvector_Luint32_t_L2 zs
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
@@ -138,13 +138,13 @@ void request_points(){
         pthread_mutex_lock(&lock);
         num_req_dist++;
         pthread_mutex_unlock(&lock);
-        bsvvector_Luint8_t_L2 xs;
-        bsvvector_Luint8_t_L2 ys;
+        bsvvector_Luint8_t_L1 xs;
+        bsvvector_Luint8_t_L1 ys;
         xs[0] = 124;
-        xs[1] = 200;
+        //xs[1] = 200;
         ys[0] = 160;
-        ys[1] = 180; 
-        printf("Sent distance request for points (x0,y0) = (%d, %d) and (x1,y1) = (%d, %d) \n", xs[0], ys[0], xs[1], ys[1]);
+        //ys[1] = 180; 
+        printf("Sent distance request for points (x0,y0) = (%d, %d) and (x1,y1) = (%d, %d) \n", xs[0], ys[0], 0, 0);
         device->requestPoints(xs, ys);
     }
 
