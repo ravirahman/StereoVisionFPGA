@@ -21,7 +21,7 @@ typedef 8 PIXELWIDTH;
 typedef 5 NPIXELS;
 
 // must be a multiple of 16
-typedef 208 IMAGEWIDTH;  
+typedef 800 IMAGEWIDTH;  
 
 // ref block is stored starting at address 0. comp block is stored starting at this address.
 typedef 16384 COMP_BLOCK_DRAM_OFFSET; 

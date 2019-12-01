@@ -167,16 +167,16 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     rule indicationToSoftwareSV;
         let d <- svmp.response.get;
         $display("Indicating to software");
-	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) xs = newVector;
-	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) ys = newVector;
-	Vector#(N, Bit#(TAdd#(FPBI, FPBF))) zs = newVector;
+        Vector#(N, Bit#(TAdd#(FPBI, FPBF))) xs = newVector;
+        Vector#(N, Bit#(TAdd#(FPBI, FPBF))) ys = newVector;
+        Vector#(N, Bit#(TAdd#(FPBI, FPBF))) zs = newVector;
      	for (Integer i = 0; i < valueOf(N); i = i+1) begin
-	    let pt = d[i];
-	    xs[i] = pack(pt[0]);
-	    ys[i] = pack(pt[1]);
-	    zs[i] = pack(pt[2]);
-	end
-	//let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
+            let pt = d[i];
+            xs[i] = pack(pt[0]);
+            ys[i] = pack(pt[1]);
+            zs[i] = pack(pt[2]);
+        end
+	    //let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
         indication.returnOutputSV(xs, ys, zs); 
         //indication.returnOutputSV(xs); 
         //indication.returnOutputSV(xs[0]); 
@@ -190,31 +190,31 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             ddr3_user.request.put(req);
         endmethod
         
-	//method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
+	    //method Action readDRAM (Bit#(32) line_addr) if (!isResetting);
         //    // read request
         //    let req = DDR3_LineReq{ write: False, line_addr: truncate(line_addr), data_in: 0};
         //    ddr3_user.request.put(req);
         //endmethod
         
-	method Action reset_dut;
+	    method Action reset_dut;
             my_rst.assertReset; // assert my_rst.new_rst signal
             isResetting <= True;
         endmethod
         
-	method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting); 
+	    method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting);
             Vector#(N, XYPoint#(PB)) points_vec = newVector();
      	    for (Integer i = 0; i < valueOf(N); i = i+1) begin
-	       XYPoint#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
-               points_vec[i] = pt;
-	    end
+	            XYPoint#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
+                points_vec[i] = pt;
+	        end
 	    
-	    svmp.request.put(points_vec);
+	        svmp.request.put(points_vec);
         endmethod
     endinterface
 
     interface Top_Pins pins;
-`ifndef SIMULATION
-        interface DDR3_Pins_VC707_1GB pins_ddr3 =  ddr3_ctrl_200mhz.ddr3;
-`endif
+        `ifndef SIMULATION
+                interface DDR3_Pins_VC707_1GB pins_ddr3 =  ddr3_ctrl_200mhz.ddr3;
+        `endif
     endinterface
 endmodule

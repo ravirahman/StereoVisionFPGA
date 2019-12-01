@@ -17,8 +17,9 @@ static MyDutRequestProxy *device = 0;
 
 size_t putcount = 0;
 size_t gotcount = 0;
-int NUM_PIXELS_PER_DRAM_LINE = 16;
-int COMP_BLOCK_DRAM_OFFSET = 16384;
+const size_t NUM_PIXELS_PER_DRAM_LINE = 16;
+const size_t COMP_BLOCK_DRAM_OFFSET = 16384;
+const size_t IMAGEWIDTH = 800;
 
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
@@ -41,11 +42,10 @@ public:
     //    pthread_mutex_unlock(&lock);
     //}
     virtual void returnOutputSV(const bsvvector_Luint32_t_L1 xs, const bsvvector_Luint32_t_L1 ys, const bsvvector_Luint32_t_L1 zs) {
-        //bsvvector_Luint32_t_L2 xs, bsvvector_Luint32_t_L2 ys, bsvvector_Luint32_t_L2 zs
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
         printf("Distances Received");
-	//printf("Received distances 0: %d\n", );
+	    //printf("Received distances 0: %d\n", );
         //printf("Received distance 1: %d\n", data.realys);
         pthread_mutex_lock(&lock);
         num_req_dist--;
@@ -58,42 +58,51 @@ public:
 
 
 void load_single_image(BMP img, uint32_t address_offset){
-    
     uint32_t address = address_offset;
-  
-    int num_rows = img.TellHeight();
-    int num_cols = img.TellWidth();
-    int cols_padded = num_cols%16; 
-    int counter = 0;
+    size_t num_rows = img.TellHeight();
+    size_t num_cols = img.TellWidth();
+    if (num_cols != IMAGEWIDTH) {
+        fprintf(stderr, "num_rows != IMAGEWIDTH, %ld != %ld", num_rows, IMAGEWIDTH);
+        exit(1);
+    }
+    if ((num_rows * num_cols) / NUM_PIXELS_PER_DRAM_LINE > COMP_BLOCK_DRAM_OFFSET) {
+        fprintf(stderr, "address offset of %ld is not sufficiently large", COMP_BLOCK_DRAM_OFFSET);
+        exit(1);
+    }
+    size_t counter = 0;
     bsvvector_Luint32_t_L16 data;
-    printf("The image is %dx%d pixels\n", num_rows, num_cols); 
+    printf("The image is %ldx%ld pixels\n", num_rows, num_cols); 
     printf("Start of load image is at address %d\n", address);
-    for (long r = 0; r < num_rows; r++) {
-        for (long c = 0; c < num_cols; c++) {
+    for (size_t r = 0; r < num_rows; r++) {
+        for (size_t c = 0; c < num_cols; c++) {
+            const RGBApixel& pixel = img.GetPixel(c, r);
+            uint32_t pixel_bits = ((uint32_t) pixel.Red)<<24 | ((uint32_t) pixel.Green) <<16 | ((uint32_t) pixel.Blue) <<8 | 0x0000;
+            data[counter] = pixel_bits;
+            counter = counter + 1;
 
-                const RGBApixel& pixel = img.GetPixel(c, r);
-                uint32_t pixel_bits = pixel.Red<<24 | pixel.Green<<16 | pixel.Blue<<8 | 0x0000;
-                data[counter] = pixel_bits;
-		counter = counter + 1;
-
-	        if (counter == NUM_PIXELS_PER_DRAM_LINE) {
-        		// Once we have the whole DRAM line, load it
-        		device->loadDRAM(address, data);
-        		address = address + 1;
-                        counter = 0;
-			//printf("Image loaded in address %d \n", address-1);		
-                      
-	        }
+            if (counter == NUM_PIXELS_PER_DRAM_LINE) {
+                // Once we have the whole DRAM line, load it
+                device->loadDRAM(address, data);
+                address = address + 1;
+                counter = 0;
+                //printf("Image loaded in address %d \n", address-1);		     
+            }
         }
 	
         // If the number of columns is not a multiple of 16, we need to pad and load the last DRAM line
-        if (cols_padded != 0) {
+        if (counter != 0) {
+            for (; counter < NUM_PIXELS_PER_DRAM_LINE; counter++) {
+                data[counter] = 0;  // pad with zeros
+            }
+            if (counter != NUM_PIXELS_PER_DRAM_LINE) {
+                fprintf(stderr, "something went wrong with math");
+                exit(1);
+            }
         	device->loadDRAM(address, data);
         	address = address + 1;
-                counter = 0;
-		//printf("Image loaded in address %d \n", address-1);		
-	
-	}
+            counter = 0;
+		    //printf("Image loaded in address %d \n", address-1);		
+	    }
 
     }
 
@@ -119,7 +128,7 @@ void load_images(){
     if (!result) {
         fprintf(stderr, "Failed to read right image from filepath\n");
         exit(1);
-    }    
+    }
     load_single_image(left_img, 0);
     load_single_image(right_img, COMP_BLOCK_DRAM_OFFSET);
    

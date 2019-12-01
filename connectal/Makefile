@@ -36,7 +36,7 @@ endif
 
 include $(CONNECTALDIR)/Makefile.connectal
 
-.PHONY: simulation fpga fpgaUpdateSW run_simulation run_fpga program_fpga run_fpgaSW compile_bluespec
+.PHONY: simulation fpga fpgaUpdateSW run_simulation run_fpga program_fpga run_fpgaSW compile_bluespec clean
 
 simulation:
 	rm -rf $(BASEDIR)/bluesim
@@ -71,3 +71,5 @@ run_fpgaSW:
 compile_bluespec:
 	bsc -u -sim -simdir bscdir -bdir bscdir -info-dir bscdir -keep-fires -aggressive-conditions -Xc++ -D_GLIBCXX_USE_CXX11_ABI=0 -p +:$(BLUESPEC_DIR) -g mkMyDut MyDut.bsv	
 
+clean:
+	rm -rf $(BASEDIR)/bluesim
