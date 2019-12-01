@@ -13,11 +13,10 @@ typedef struct {
 } ScoreDistanceT#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
 
-interface UpdateScore#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
-	interface Put#(ScoreDistanceT#(pb, npixelst, pd, pixelWidth)) request;
-	interface Get#(UInt#(pb)) response;
-	method Action restart;
-endinterface
+typedef Server#(
+	ScoreDistanceT#(pb, npixelst, pd, pixelWidth),
+	UInt#(pb)
+) UpdateScore#(numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
 module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 	Reg#(Maybe#(ScoreT#(npixelst, pd, pixelWidth))) bestScore <- mkReg(tagged Invalid);
@@ -44,11 +43,8 @@ module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 
 	interface Get response;
 		method ActionValue#(UInt#(pb)) get();
+			bestScore <= tagged Invalid;
 			return bestDistance;
 		endmethod
 	endinterface
-
-	method Action restart;
-		bestScore <= tagged Invalid;
-	endmethod
 endmodule

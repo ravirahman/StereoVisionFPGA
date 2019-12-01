@@ -9,12 +9,10 @@ import Assert::*;
 
 typedef TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)) NumPixelsPerLine#(numeric type pd, numeric type pixelWidth);
 
-interface LoadBlocks#(numeric type dramOffset, numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
-	interface Put#(XYPoint#(pb)) request;
-	interface Get#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) response;
-	method Action setMemoryStatus(Bool memoryStatus);
-	method Bool getMemoryStatus();
-endinterface
+typedef Server#(
+	XYPoint#(pb),
+	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))
+) LoadBlocks#(numeric type dramOffset, numeric type imageWidth, numeric type pb, numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
 module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth, pb, npixelst, pd, pixelWidth) ifc)
 	provisos(
@@ -27,7 +25,6 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 
 	Reg#(UInt#(pb)) currentReqDx <- mkReg(0);
 	Reg#(UInt#(pb)) currentReqDy <- mkReg(0);
-	Reg#(Bool) memoryLoaded <- mkReg(False);
 
 	Maybe#(Pixel#(pd, pixelWidth)) invalidPixel = tagged Invalid;
 	
@@ -60,7 +57,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		return allValid;
 	endfunction
 
-	rule requestFromDRAM if (memoryLoaded);
+	rule requestFromDRAM;
 		let xy = inFIFO.first();
 		if (currentReqDx == 0 && currentReqDy == 0) begin
 			//$display("Ruesting cachelines from dram for point", fshow(xy));
@@ -70,7 +67,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		poi.x = xy.x + currentReqDx;
 		poi.y = xy.y + currentReqDy;
 		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
-		$display($format("Requesting address %d for point", location, fshow(poi)));
+		// $display($format("Requesting address %d for point", location, fshow(poi)));
 		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
 		ddr3_user.request.put(req);
 		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
@@ -80,7 +77,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 			currentReqDy <= currentReqDy + 1;
 		end else begin
 			inFIFO.deq();
-			$display("Finished request");
+			// $display("Finished request");
 			currentReqDx <= 0;
 			currentReqDy <= 0;
 		end
@@ -90,23 +87,28 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		let poi = poiFIFO.first();
 		let resp <- ddr3_user.response.get();
 		let drampoint = getXYPointFromDDR3Addr(resp.line_addr);
-		$display($format("Processing response for address %d in context of poi", resp.line_addr, fshow(poi)));
+		// $display($format("Processing response for address %d in context of poi", resp.line_addr, fshow(poi)));
 		// $display("Calculated point for start of block", fshow(drampoint));
-		Integer j = 0;
+		let blockStartI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst));
+		if (drampoint.x > poi.x) begin
+			blockStartI = blockStartI + drampoint.x - poi.x;
+		end
 		for (Integer i = 0; i < valueOf(NumPixelsPerLine#(pd, pixelWidth)); i = i + 1) begin
 			// do we want this pixel?
 			if (poi.x <= drampoint.x + fromInteger(i)) begin
 				if (drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst))) begin
 					if (poi.y <= drampoint.y) begin
 						if (drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
-							// $display("keeping pixel at (%d,%d)", drampoint.x + fromInteger(i), drampoint.y);
 							let startI = i * valueOf(TMul#(pd, pixelWidth));
 							let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
 							let pixelAsBytes = resp.data_out[endI:startI];
 							Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
-							// $display("pixel value: ", fshow(pixel));
 							let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
-							blockReg[blockPixelI] <= tagged Valid pixel;
+							// $display("block start: ", blockStartI);
+							if (!isValid(blockReg[blockPixelI]) && (blockStartI == 0 || isValid(blockReg[blockStartI - 1]))) begin
+								// $display("keeping pixel at block %d, (%d,%d)", blockPixelI, drampoint.x + fromInteger(i), drampoint.y);
+								blockReg[blockPixelI] <= tagged Valid pixel;
+							end
 						end
 					end
 				end
@@ -115,7 +117,7 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 	endrule
 
 	rule finishProcessing (areAllValid());
-		$display("Finishing and returning");
+		// $display("Finishing and returning");
 		Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
 		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
 			answer[i] = fromMaybe(replicate(0), blockReg[i]);
@@ -124,14 +126,6 @@ module mkLoadBlocks(DDR3_6375User ddr3_user, LoadBlocks#(dramOffset, imageWidth,
 		outFIFO.enq(answer);
 		poiFIFO.deq();
 	endrule
-
-	method Action setMemoryStatus(Bool memoryStatus);
-		memoryLoaded <= memoryStatus;
-	endmethod
-
-	method Bool getMemoryStatus();
-		return memoryLoaded;
-	endmethod
 
 	interface Put request = toPut(inFIFO);
 	interface Get response = toGet(outFIFO);

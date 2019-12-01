@@ -33,7 +33,7 @@ module mkDDR3WrapperSim#(DDR3_User_VC707_1GB ddr_usr) (DDR3_6375User);
             ddr_usr.request({req.line_addr, 3'b0}, (req.write)?-1:0, req.data_in);
             if (req.write == False) begin
                 lineAddrFIFO.enq(req.line_addr);
-            	$display("Read request sent in ddr interface");
+            	// $display("Read request sent in ddr interface");
 	    end
         endmethod
     endinterface
@@ -43,7 +43,7 @@ module mkDDR3WrapperSim#(DDR3_User_VC707_1GB ddr_usr) (DDR3_6375User);
             DDR3_Line data <- ddr_usr.read_data();
             DDR3_Addr line_addr = lineAddrFIFO.first();
             DDR3_LineRes answer = ?;
-            $display("Read request obtained in ddr interface");
+            // $display("Read request obtained in ddr interface");
             answer.line_addr = line_addr;
             answer.data_out = data;
             lineAddrFIFO.deq();

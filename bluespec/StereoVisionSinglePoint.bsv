@@ -48,106 +48,102 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 	FIFO#(Vector#(3, FixedPoint#(fpbi, fpbf))) realDistances <- mkFIFO();
 	FIFO#(XYPoint#(pb)) inFIFO <- mkFIFO();
 
+	Reg#(Bool) refBlockRequested <- mkReg(False);
+
 	// Counter to keep track of the number of blocks we have loaded in memory
 	Reg#(UInt#(pb)) loadCounter <- mkReg(0);
 	// Counter to keep track of the number of blocks that have been processed
 	Reg#(UInt#(pb)) compCounter <- mkReg(0);
 
-	// Boolean to check if the reference block has been loaded
-	Reg#(Bool) referenceBlockLoaded <- mkReg(False);
-
 	// Register to hold the reference block
-	Reg#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth))) refBlock <- mkRegU();
-	Reg#(Bool) referenceBlockStored <- mkReg(False); 
+	Reg#(Maybe#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)))) refBlock <- mkReg(tagged Invalid);
 
 	// Modules that make the different operations
-	LoadBlocks#(0, imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(0,                   imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
 	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
 	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
 	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(focal_distance, real_world_cte);
-	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();	
-	
+	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();
+
+	rule requestRefBlock if (!refBlockRequested);
+		$display("Requesting ref block");
+		let xy = inFIFO.first();
+		loadRefBlock.request.put(xy);
+		refBlockRequested <= True;
+	endrule
+
+	rule storeRefBlock;
+		$display("Receiving ref block");
+		let b <- loadRefBlock.response.get();
+		// $display("Ref Block: ", b);
+		refBlock <= tagged Valid b;
+	endrule
+
 	// This rules keeps asking for blocks to be loaded until
 	// we have loaded all the necessary blocks in the search area
-	rule retrieveBlock if (loadCounter < fromInteger(valueOf(searchArea)));
+	rule requestCompBlock if (isValid(refBlock) && loadCounter < fromInteger(valueOf(searchArea)));  // only request the comp block if we have the ref block, so we can deque comp ASAP
+		XYPoint#(pb) p = ?;
 		let xy = inFIFO.first();
-		
-		if (referenceBlockLoaded == False) begin
-			loadRefBlock.request.put(xy);
-			loadCompBlock.request.put(xy);
-			referenceBlockLoaded <= True;
-		end else begin
-			XYPoint#(pb) p = ?;
-			p.x = xy.x + loadCounter;
-			p.y = xy.y;
-			loadCompBlock.request.put(p);
-		end
+		p.x = xy.x + loadCounter;
+		p.y = xy.y;
+		loadCompBlock.request.put(p);
 		loadCounter <= loadCounter + 1;
-                $display("Load Counter is: ", loadCounter);
+		// $display("Comp Block Counter is: ", loadCounter);
 	endrule
 
-	rule computeScoreAndLoadRefBlockRule if (compCounter < fromInteger(valueOf(searchArea)) && referenceBlockStored == False);
+
+
+	rule computeScoreRule if (isValid(refBlock));  // guard should always be true whenever loadCompBlock has a response
+		// $display("Receiving comp block");
 		let c <- loadCompBlock.response.get();
+		//$display("Comp block: ", c);
+
 		BlockPair#(npixelst, pd, pixelWidth) bp;
 		bp.compBlock = c;
-		let b <- loadRefBlock.response.get();
-		//$display("Ref Block: ", b);
-		bp.refBlock = b;
-		refBlock <= b;
-		referenceBlockStored <= True;
-	
-		//$display("Comp block: ", c);
-		$display("Comp block put for comparison, loaded ref block");
-		cs.request.put(bp);
-	endrule
-	
-	rule computeScoreAndRetrieveRefBlockRule if (compCounter < fromInteger(valueOf(searchArea)) && referenceBlockStored == True);
-		let c <- loadCompBlock.response.get();
-		BlockPair#(npixelst, pd, pixelWidth) bp;
-		bp.compBlock = c;
-		bp.refBlock = refBlock;
-		//$display("Ref Block: ", refBlock);	
-		
-		//$display("Comp block: ", c);
-		$display("Comp block put for comparison, reusing ref block");
+		bp.refBlock = fromMaybe(?, refBlock);
+		// $display("Comp block put for comparison");
 		cs.request.put(bp);
 	endrule
 
-	rule updateScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
+	rule updateScoreRule;
+		// $display("updating score");
 		let sc <- cs.response.get();
-		$display("Block score is: ", sc);
+		// $display("Block score is: ", sc);
 		ScoreDistanceT#(pb, npixelst, pd, pixelWidth) sd;
 		sd.score = sc;
 		sd.distance = compCounter;
 		us.request.put(sd);
 		compCounter <= compCounter+1;
-		$display("Comp counter is ", compCounter);
+		// $display("Comp counter is ", compCounter);
 	endrule
 
 	rule computeRealWorldDistanceRule if (compCounter == fromInteger(valueOf(searchArea)));
+		$display("computing real world distance");
 		// If we are here, it means we have completed the search over the whole search area.
-		let bd <- us.response.get();
-		$display("Best distance is: ", bd);
+		let bd <- us.response.get();  // getting also invalidates the response
+		$display("got response");
+		// $display("Best distance is: ", bd);
 		XYPointDistance#(pb) pointDistance = ?;
 		pointDistance.point = inFIFO.first();
 		pointDistance.distance = bd;
 		cd.request.put(pointDistance);
 		compCounter <= compCounter+1;
+		// $display("put compute distance request");
 	endrule
 
-	rule finishUp if (compCounter == fromInteger(valueOf(TAdd#(searchArea, 1))));
+	rule finishUp;
+		$display("finishing up");
 		let d <- cd.response.get();
-		$display("Computed x is: ", fshow(d[0]));
-		$display("Computed y is: ", fshow(d[1]));
-		$display("Computed z is: ", fshow(d[2]));
+		// $display("Computed x is: ", fshow(d[0]));
+		// $display("Computed y is: ", fshow(d[1]));
+		// $display("Computed z is: ", fshow(d[2]));
 		realDistances.enq(d);
 		// Restart the counters
-		$display("Dequeued");
+		// $display("Dequeued");
 		loadCounter <= 0;
 		compCounter <= 0;
-		referenceBlockLoaded <= False;
-		referenceBlockStored <= False;
-		us.restart();
+		refBlockRequested <= False;
+		refBlock <= tagged Invalid;
 		inFIFO.deq();
 	endrule
 

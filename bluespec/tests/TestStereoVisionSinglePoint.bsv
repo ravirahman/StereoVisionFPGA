@@ -22,6 +22,8 @@ endinterface
 typedef TDiv#(512, TMul#(PIXELWIDTH, PD)) PIXELS_IN_BLOCK;
 typedef TDiv#(IMAGEWIDTH, PIXELS_IN_BLOCK) BLOCKS_IN_ROW;
 
+typedef 100 NUM_SAMPLES;
+
 module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
@@ -29,8 +31,8 @@ module mkTest();
 
 	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, focal_dist, real_world_cte);
 	Reg#(Bool) passed <- mkReg(True);
-	Reg#(Bit#(4)) feed <- mkReg(0);
-	Reg#(Bit#(4)) check <- mkReg(0);
+	Reg#(Bit#(TLog#(NUM_SAMPLES))) feed <- mkReg(0);
+	Reg#(Bit#(TLog#(NUM_SAMPLES))) check <- mkReg(0);
 
 	function Action dofeed(XYPoint#(PB) xy);
 		action
@@ -42,8 +44,7 @@ module mkTest();
     Reg#(Int#(26)) nextBlockToLoad <- mkReg(0);
     
 
-    rule loadMemory (feed == 0);
-        
+    rule loadMemory (feed == 0 && check == 0);
         let blockX = nextBlockToLoad % fromInteger(valueOf(BLOCKS_IN_ROW));
         let y = nextBlockToLoad / fromInteger(valueOf(BLOCKS_IN_ROW));
         Vector#(PIXELS_IN_BLOCK, Pixel#(PD, PIXELWIDTH)) pixels = ?;
@@ -95,7 +96,8 @@ module mkTest();
 				$display("Got: ", fshow(compDistance));
 				passed <= False;
 			end
-			check <= check+1;
+            // $display("check ", check);
+            check <= check+1;
 		endaction
 	endfunction
 
@@ -110,21 +112,32 @@ module mkTest();
     XYPoint#(PB) p3;
     p3.x = 0;
     p3.y = 2;
-    
+
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
     FixedPoint#(FPBI, FPBF) to2 = 2.45063;
     FixedPoint#(FPBI, FPBF) to3 = 6.73925;
 
-    rule f0 (feed == 1); dofeed(p1); endrule
-    rule f1 (feed == 2); dofeed(p2); endrule
-    rule f2 (feed == 3); dofeed(p3); endrule
-    
-    rule c0 (check == 1); docheck(to1); endrule
-    rule c1 (check == 2); docheck(to2); endrule
-    rule c2 (check == 3); docheck(to3); endrule
+    rule feed_rule if (feed > 0 && feed < fromInteger(valueOf(NUM_SAMPLES)));
+        if (feed % 3 == 0) begin
+            dofeed(p1);
+        end else if (feed % 3 == 1) begin
+            dofeed(p2);
+        end else begin
+            dofeed(p3);
+        end
+    endrule
 
+    rule check_rule if (check > 0 && check < fromInteger(valueOf(NUM_SAMPLES)));
+        if (check % 3 == 0) begin
+            docheck(to1);
+        end else if (check % 3 == 1) begin
+            docheck(to2);
+        end else begin
+            docheck(to3);
+        end
+    endrule
 
-    rule finish (feed == 4 && check == 4);
+    rule finish (feed == fromInteger(valueOf(NUM_SAMPLES)) && check == fromInteger(valueOf(NUM_SAMPLES)));
         if (passed) begin
             $display("PASSED");
         end else begin
