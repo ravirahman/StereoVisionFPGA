@@ -14,9 +14,9 @@ CPPFILES = connectal_test.cpp
 # add BSV directories other than the current directory (space between entries)
 BSVPATH += $(DDR3_DIR) ../bluespec
 
-# Connectal Flags (125 MHz clock)
+# Connectal Flags (1.25 MHz clock)
 CONNECTALFLAGS += -I ../easyBMP/ 
-CONNECTALFLAGS += --mainclockperiod 8 --bscflags " -u --keep-fires -u -show-schedule "
+CONNECTALFLAGS += --mainclockperiod 800 --bscflags " -u --keep-fires -u -show-schedule "
 CONNECTALFLAGS += --bscflags " -steps-max-intervals 50 +RTS -K256M -RTS"
 CONNECTALFLAGS += --cflags=-Wno-error
 #CONNECTALFLAGS += --clib " ../easyBMP/ "
