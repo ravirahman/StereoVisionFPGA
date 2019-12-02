@@ -4,7 +4,7 @@
 import FixedPoint::*;
 
 // Number of bits to specify the image point coordinates (both x and y)
-typedef 8 PB;
+typedef 12 PB;
 
 // dimension of a pixel. must be a power of 2. Will usually be either 1 (greyscale) or 4 (color), where the last dimension is ignored.
 typedef 4 PD;
@@ -20,14 +20,14 @@ typedef 8 PIXELWIDTH;
 // Number of pixels contained in a block in one dimension
 typedef 5 NPIXELS;
 
-// must be a multiple of 16
-typedef 800 IMAGEWIDTH;  
+// must be a multiple of 16 but not a multiple of 32.
+typedef 816 IMAGEWIDTH;  
 
 // ref block is stored starting at address 0. comp block is stored starting at this address.
 typedef 16384 COMP_BLOCK_DRAM_OFFSET; 
 
 // Number of Single Points that we calculate in parallel
-typedef 1 N;
+typedef 3 N;
 
 // Constant defining the camera system (necessary to compute the real world distance from the
 // pixel distance). This constant corresponds to A = focal_distance*distance_between_cameras/pixel_pitch

@@ -14,6 +14,7 @@ import DDR3Sim::*;
 import DDR3User::*;
 import XYPoint::*;
 import DDR3Controller::*;
+import DDR3ReaderWrapper::*;
 
 interface Top_Pins;
    interface DDR3_Pins_VC707_1GB pins_ddr3;
@@ -28,8 +29,9 @@ module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
+    DDR3ReaderWrapper readerWrapper <- mkDDR3ReaderWrapper(ddr3_user);
 
-	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(ddr3_user, focal_dist, real_world_cte);
+	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(readerWrapper, focal_dist, real_world_cte);
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(TLog#(NUM_SAMPLES))) feed <- mkReg(0);
 	Reg#(Bit#(TLog#(NUM_SAMPLES))) check <- mkReg(0);
@@ -102,16 +104,16 @@ module mkTest();
 	endfunction
 
     XYPoint#(PB) p1;
-    p1.x = 0;
-    p1.y = 0;
+    p1.x = 204;
+    p1.y = 146;
 
     XYPoint#(PB) p2;
     p2.x = 16;
     p2.y = 1;
 
     XYPoint#(PB) p3;
-    p3.x = 0;
-    p3.y = 2;
+    p3.x = 204;
+    p3.y = 146;
 
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
     FixedPoint#(FPBI, FPBF) to2 = 2.45063;

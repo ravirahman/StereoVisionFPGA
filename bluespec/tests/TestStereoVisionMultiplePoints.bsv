@@ -12,6 +12,7 @@ import DDR3Common::*;
 import DDR3Controller::*;
 import DDR3Sim::*;
 import DDR3User::*;
+import DDR3ReaderWrapper::*;
 import DefaultValue::*;
 import FShow::*;
 
@@ -20,8 +21,9 @@ module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
+    DDR3ReaderWrapper readerWrapper <- mkDDR3ReaderWrapper(ddr3_user);
 
-	StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(ddr3_user, focal_dist, real_world_cte);
+	StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(readerWrapper, focal_dist, real_world_cte);
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
@@ -60,19 +62,19 @@ module mkTest();
     p3.x = 10;
     p3.y = 2;
 
-    Vector#(N, XYPoint#(PB)) points = newVector();
+    Vector#(N, XYPoint#(PB)) points = ?;
     points[0] = p1;
     points[1] = p2;
+    points[2] = p3;
 
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
     FixedPoint#(FPBI, FPBF) to2 = 2.45063;
     FixedPoint#(FPBI, FPBF) to3 = 6.73925;
 
-    Vector#(N, FixedPoint#(FPBI, FPBF)) tos = newVector();
+    Vector#(N, FixedPoint#(FPBI, FPBF)) tos = ?;
     tos[0] = to1;
     tos[1] = to2;
-    //tos[2] = to3;
-    //tos[3] = to3;
+    tos[2] = to3;
 
     rule f0 (feed == 0); dofeed(points); endrule
     rule f1 (feed == 1); dofeed(points); endrule

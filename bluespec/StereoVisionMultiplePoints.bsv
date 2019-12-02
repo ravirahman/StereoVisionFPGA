@@ -8,6 +8,7 @@ import GetPut::*;
 import ClientServer::*;
 import XYPoint::*;
 import Pixel::*;
+import DDR3ReaderWrapper::*;
 import DDR3User::*;
 
 typedef Server#(
@@ -15,7 +16,7 @@ typedef Server#(
 	Vector#(n, Vector#(3, FixedPoint#(fpbi, fpbf)))
 ) StereoVisionMultiplePoints#(numeric type n, numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchArea, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-module mkStereoVisionMultiplePoints(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) focal_dist, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionMultiplePoints#(n, compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
+module mkStereoVisionMultiplePoints(DDR3ReaderWrapper ddr3_user, FixedPoint#(fpbi, fpbf) focal_dist, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionMultiplePoints#(n, compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))

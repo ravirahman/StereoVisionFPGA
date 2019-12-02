@@ -14,6 +14,7 @@ import DDR3Sim::*;
 import DDR3User::*;
 import XYPoint::*;
 import DDR3Controller::*;
+import DDR3ReaderWrapper::*;
 
 interface Top_Pins;
    interface DDR3_Pins_VC707_1GB pins_ddr3;
@@ -26,9 +27,10 @@ module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
+    DDR3ReaderWrapper readerWrapper <- mkDDR3ReaderWrapper(ddr3_user);
 
 
-	LoadBlocks#(0, IMAGEWIDTH, PB, NPIXELS, PD, PIXELWIDTH) loadBlocks <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(0, IMAGEWIDTH, PB, NPIXELS, PD, PIXELWIDTH) loadBlocks <- mkLoadBlocks(readerWrapper);
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(8)) feed <- mkReg(0);
     Reg#(Bit#(8)) check <- mkReg(0);
@@ -50,7 +52,9 @@ module mkTest();
 				$display("Wanted: ", fshow(expBlock));
 				$display("Got: ", fshow(actBlock));
 				passed <= False;
-			end
+			end else begin
+                // $display("Check passed");
+            end
 			check <= check+1;
 		endaction
     endfunction
@@ -63,7 +67,7 @@ module mkTest();
     Vector#(TDiv#(512, TMul#(PD, PIXELWIDTH)), Pixel#(PD, PIXELWIDTH)) whitePixelLine = replicate(whitePixel);
     Vector#(TDiv#(512, TMul#(PD, PIXELWIDTH)), Pixel#(PD, PIXELWIDTH)) blackPixelLine = replicate(blackPixel);
     
-    rule loadMemory (feed == 0 && check == 0 && !loadBlocks.getMemoryStatus);
+    rule loadMemory (feed == 0 && check == 0);
         DDR3_LineReq req = ?;
         req.write = True;
         req.line_addr = pack(nextBlockToLoad);
@@ -78,23 +82,19 @@ module mkTest();
         ddr3_user.request.put(req);
 
         if (nextBlockToLoad == 0) begin
-            // $display("Loading memory");
+            $display("Loading memory");
         end
         
         if (nextBlockToLoad == 128) begin
-            // $display("Finished loading memory");
+            $display("Finished loading memory");
             feed <= feed + 1;
             check <= check + 1;  // nothing to check here
-            loadBlocks.setMemoryStatus(True);
         end
         nextBlockToLoad <= nextBlockToLoad + 1;
         
     endrule
 
-
-
-
-// assumes that the image width is a multiple of 16 but not 32 since 16 pixels (32 bits each) are stored in a 512-bit dram line, and that NPIXELS=5
+    // assumes that the image width is a multiple of 16 but not 32 since 16 pixels (32 bits each) are stored in a 512-bit dram line, and that NPIXELS=5
 
     XYPoint#(PB) p1;
     p1.x = 0;

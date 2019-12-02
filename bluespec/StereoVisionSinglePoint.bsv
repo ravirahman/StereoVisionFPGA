@@ -12,6 +12,7 @@ import ComputeDistance::*;
 import GetPut::*;
 import UpdateScore::*;
 import LoadBlocks::*;
+import DDR3ReaderWrapper::*;
 import DDR3User::*;
 import XYPointDistance::*;
 import XYPoint::*;
@@ -37,7 +38,7 @@ typedef Server#(
 	Vector#(3, FixedPoint#(fpbi, fpbf))
 ) StereoVisionSinglePoint#(numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchArea, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf) focal_distance, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
+module mkStereoVisionSinglePoint(DDR3ReaderWrapper ddr3_user, FixedPoint#(fpbi, fpbf) focal_distance, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
@@ -96,7 +97,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 	rule computeScoreRule if (isValid(refBlock));  // guard should always be true whenever loadCompBlock has a response
 		// $display("Receiving comp block");
 		let c <- loadCompBlock.response.get();
-		//$display("Comp block: ", c);
+		// $display("Comp block: ", c);
 
 		BlockPair#(npixelst, pd, pixelWidth) bp;
 		bp.compBlock = c;
@@ -105,7 +106,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		cs.request.put(bp);
 	endrule
 
-	rule updateScoreRule;
+	rule updateScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
 		// $display("updating score");
 		let sc <- cs.response.get();
 		// $display("Block score is: ", sc);
@@ -121,7 +122,7 @@ module mkStereoVisionSinglePoint(DDR3_6375User ddr3_user, FixedPoint#(fpbi, fpbf
 		$display("computing real world distance");
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.response.get();  // getting also invalidates the response
-		$display("got response");
+		// $display("got response");
 		// $display("Best distance is: ", bd);
 		XYPointDistance#(pb) pointDistance = ?;
 		pointDistance.point = inFIFO.first();
