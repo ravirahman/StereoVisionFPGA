@@ -84,7 +84,7 @@ interface MyDutRequest;
     method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints ( Vector#(1, Bit#(16)) xs, Vector#(1, Bit#(16)) ys);
+    method Action requestPoints ( Vector#(2, Bit#(16)) xs, Vector#(2, Bit#(16)) ys);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -94,7 +94,7 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    method Action returnOutputSV (Vector#(1, Bit#(32)) xs, Vector#(1, Bit#(32)) ys, Vector#(1, Bit#(32)) zs);
+    method Action returnOutputSV (Vector#(2, Bit#(32)) xs, Vector#(2, Bit#(32)) ys, Vector#(2, Bit#(32)) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design

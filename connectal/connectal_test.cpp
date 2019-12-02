@@ -22,6 +22,8 @@ const size_t NUM_PIXELS_PER_DRAM_LINE = 16;
 const size_t COMP_BLOCK_DRAM_OFFSET = 16384;
 const size_t IMAGEWIDTH = 800;
 
+const uint16_t N = 2; // Number of single points in parallel
+
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
 pthread_mutex_t lock;
@@ -42,21 +44,31 @@ public:
     //    num_req_sent--;
     //    pthread_mutex_unlock(&lock);
     //}
-    virtual void returnOutputSV(const bsvvector_Luint32_t_L1 xs, const bsvvector_Luint32_t_L1 ys, const bsvvector_Luint32_t_L1 zs) {
+    virtual void returnOutputSV(const bsvvector_Luint32_t_L2 xs, const bsvvector_Luint32_t_L2 ys, const bsvvector_Luint32_t_L2 zs) {
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
          
-        uint16_t integer_x = (uint16_t) (xs[0]>>16);
-	uint16_t fractional_x = (uint16_t) xs[0];
+        uint16_t integer_x1 = (uint16_t) (xs[0]>>16);
+	uint16_t fractional_x1 = (uint16_t) xs[0];
         
-	uint16_t integer_y = (uint16_t) (ys[0]>>16);
-	uint16_t fractional_y = (uint16_t) ys[0];
+	uint16_t integer_y1 = (uint16_t) (ys[0]>>16);
+	uint16_t fractional_y1 = (uint16_t) ys[0];
         
-	uint16_t integer_z = (uint16_t) (zs[0]>>16);
-	uint16_t fractional_z = (uint16_t) zs[0];
+	uint16_t integer_z1 = (uint16_t) (zs[0]>>16);
+	uint16_t fractional_z1 = (uint16_t) zs[0];
 	
+         
+        uint16_t integer_x2 = (uint16_t) (xs[1]>>16);
+	uint16_t fractional_x2 = (uint16_t) xs[1];
+        
+	uint16_t integer_y2 = (uint16_t) (ys[1]>>16);
+	uint16_t fractional_y2 = (uint16_t) ys[1];
+        
+	uint16_t integer_z2 = (uint16_t) (zs[1]>>16);
+	uint16_t fractional_z2 = (uint16_t) zs[1];
 	
-        printf("(X,Y,Z) distance is (%d.%d, %d.%d, %d.%d) \n", integer_x, fractional_x, integer_y, fractional_y, integer_z, fractional_z);
+        printf("(X,Y,Z) distance of point 1 is (%d.%d, %d.%d, %d.%d) \n", integer_x1, fractional_x1, integer_y1, fractional_y1, integer_z1, fractional_z1);
+        printf("(X,Y,Z) distance of point 2 is (%d.%d, %d.%d, %d.%d) \n", integer_x2, fractional_x2, integer_y2, fractional_y2, integer_z2, fractional_z2);
 	//printf("Z received in connectal is:");
 	//std::cout << std::bitset<32>(zs[0]);
 	//printf("Distances Received\n");
@@ -127,8 +139,6 @@ void load_single_image(BMP img, uint32_t address_offset){
 }
 
 
-
-
 void load_images(){
     
     // First of all, get the two images
@@ -158,19 +168,19 @@ void load_images(){
 void request_points(){
 
     // Here, we will request points on the image. For now, we are making this points up.
-    static const uint16_t arr_x[] = {117, 138, 122, 198, 202, 213, 352, 361, 355, 542, 549, 543, 666}; 
-    static const uint16_t arr_y[] = {204, 203, 158, 178, 144, 176, 140, 141, 122, 142, 135, 118, 153};
-    for (uint32_t i = 0; i < 13; i++) {
+    static const uint16_t arr_x[] = {117, 122, 198, 202, 213, 352, 361, 355, 542, 549, 543, 666}; 
+    static const uint16_t arr_y[] = {204, 158, 178, 144, 176, 140, 141, 122, 142, 135, 118, 153};
+    for (uint32_t i = 0; i < 6; i++) {
         pthread_mutex_lock(&lock);
         num_req_dist++;
         pthread_mutex_unlock(&lock);
-        bsvvector_Luint16_t_L1 xs;
-        bsvvector_Luint16_t_L1 ys;
-        xs[0] = arr_x[i];
-        //xs[1] = 200;
-        ys[0] = arr_y[i];
-        //ys[1] = 180; 
-        printf("Sent distance request for points (x0,y0) = (%d, %d) and (x1,y1) = (%d, %d) \n", xs[0], ys[0], 0, 0);
+        bsvvector_Luint16_t_L2 xs;
+        bsvvector_Luint16_t_L2 ys;
+        xs[0] = arr_x[2*i];
+        xs[1] = arr_x[2*i+1];
+        ys[0] = arr_y[2*i];
+        ys[1] = arr_y[2*i+1]; 
+        printf("Sent distance request for points (x0,y0) = (%d, %d) and (x1,y1) = (%d, %d) \n", xs[0], ys[0], xs[1], ys[1]);
         device->requestPoints(xs, ys);
     }
 
