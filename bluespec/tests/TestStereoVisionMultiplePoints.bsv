@@ -65,7 +65,7 @@ module mkTest();
     Vector#(N, XYPoint#(PB)) points = ?;
     points[0] = p1;
     points[1] = p2;
-    points[2] = p3;
+    // points[2] = p3;
 
     FixedPoint#(FPBI, FPBF) to1 = 13.43785;
     FixedPoint#(FPBI, FPBF) to2 = 2.45063;
@@ -74,18 +74,16 @@ module mkTest();
     Vector#(N, FixedPoint#(FPBI, FPBF)) tos = ?;
     tos[0] = to1;
     tos[1] = to2;
-    tos[2] = to3;
+    // tos[2] = to3;
 
-    rule f0 (feed == 0); dofeed(points); endrule
-    rule f1 (feed == 1); dofeed(points); endrule
-    rule f2 (feed == 2); dofeed(points); endrule
+
+
+    rule f0 (feed < fromInteger(valueOf(N))); dofeed(points); endrule
     
-    rule c0 (check == 0); docheck(tos); endrule
-    rule c1 (check == 1); docheck(tos); endrule
-    rule c2 (check == 2); docheck(tos); endrule
+    rule c0 (check < fromInteger(valueOf(N))); docheck(tos); endrule
 
 
-    rule finish (feed == 3 && check == 3);
+    rule finish (feed == fromInteger(valueOf(N)) && check == fromInteger(valueOf(N)));
         if (passed) begin
             $display("PASSED");
         end else begin

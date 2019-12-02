@@ -104,8 +104,8 @@ module mkTest();
 	endfunction
 
     XYPoint#(PB) p1;
-    p1.x = 204;
-    p1.y = 146;
+    p1.x = 215;
+    p1.y =178;
 
     XYPoint#(PB) p2;
     p2.x = 16;
