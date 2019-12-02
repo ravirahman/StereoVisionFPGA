@@ -4,7 +4,7 @@
 import FixedPoint::*;
 
 // Number of bits to specify the image point coordinates (both x and y)
-typedef 8 PB;
+typedef 10 PB;
 
 // dimension of a pixel. must be a power of 2. Will usually be either 1 (greyscale) or 4 (color), where the last dimension is ignored.
 typedef 4 PD;

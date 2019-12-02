@@ -12,6 +12,7 @@
 
 #include "MyDutRequest.h"
 #include "MyDutIndication.h"
+#include <bitset>
 
 static MyDutRequestProxy *device = 0;
 
@@ -56,6 +57,8 @@ public:
 	
 	
         printf("(X,Y,Z) distance is (%d.%d, %d.%d, %d.%d) \n", integer_x, fractional_x, integer_y, fractional_y, integer_z, fractional_z);
+	//printf("Z received in connectal is:");
+	//std::cout << std::bitset<32>(zs[0]);
 	//printf("Distances Received\n");
 
 	//printf("Received distances 0: %d\n", );
@@ -155,14 +158,14 @@ void load_images(){
 void request_points(){
 
     // Here, we will request points on the image. For now, we are making this points up.
-    static const uint8_t arr_x[] = {124, 200, 204, 215, 4}; 
-    static const uint8_t arr_y[] = {160, 180, 146, 178, 142};
-    for (uint32_t i = 0; i < 5; i++) {
+    static const uint16_t arr_x[] = {117, 138, 122, 198, 202, 213, 352, 361, 355, 542, 549, 543, 666}; 
+    static const uint16_t arr_y[] = {204, 203, 158, 178, 144, 176, 140, 141, 122, 142, 135, 118, 153};
+    for (uint32_t i = 0; i < 13; i++) {
         pthread_mutex_lock(&lock);
         num_req_dist++;
         pthread_mutex_unlock(&lock);
-        bsvvector_Luint8_t_L1 xs;
-        bsvvector_Luint8_t_L1 ys;
+        bsvvector_Luint16_t_L1 xs;
+        bsvvector_Luint16_t_L1 ys;
         xs[0] = arr_x[i];
         //xs[1] = 200;
         ys[0] = arr_y[i];

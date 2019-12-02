@@ -84,7 +84,7 @@ interface MyDutRequest;
     method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data);
     
     // This method sends the image points whose distance we want to compute
-    method Action requestPoints ( Vector#(1, Bit#(8)) xs, Vector#(1, Bit#(8)) ys);
+    method Action requestPoints ( Vector#(1, Bit#(16)) xs, Vector#(1, Bit#(16)) ys);
     
     // If we want to reset the FPGA
     method Action reset_dut;
@@ -175,6 +175,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             xs[i] = pack(pt[0]);
             ys[i] = pack(pt[1]);
             zs[i] = pack(pt[2]);
+            //$display("Z from bluespec is: ", pack(pt[2]));
         end
 	    //let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
         indication.returnOutputSV(xs, ys, zs); 
@@ -201,10 +202,14 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             isResetting <= True;
         endmethod
         
-	    method Action requestPoints (Vector#(N, Bit#(PB)) xs, Vector#(N, Bit#(PB)) ys) if (!isResetting);
+	    method Action requestPoints (Vector#(N, Bit#(16)) xs, Vector#(N, Bit#(16)) ys) if (!isResetting);
             Vector#(N, XYPoint#(PB)) points_vec = newVector();
      	    for (Integer i = 0; i < valueOf(N); i = i+1) begin
-	            XYPoint#(PB) pt = mkXYPoint(unpack(xs[i]), unpack(ys[i]));
+                    //$display("x requested myDUT: ", unpack(xs[i]));
+                    //$display("y requested myDUT: ", unpack(ys[i]));
+		    Bit#(PB) x = truncate(pack(xs[i]));
+		    Bit#(PB) y = truncate(pack(ys[i]));
+	            XYPoint#(PB) pt = mkXYPoint(unpack(x),unpack(y));
                 points_vec[i] = pt;
 	        end
 	    
