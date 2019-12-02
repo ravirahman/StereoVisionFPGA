@@ -30,8 +30,9 @@ module mkTest();
     // We are using wrapper for easy use
     DDR3_6375User ddr3_user <- mkDDR3WrapperSim(ddr3_ctrl);
     DDR3ReaderWrapper readerWrapper <- mkDDR3ReaderWrapper(ddr3_user);
+    Builder#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) builder <- mkBuilder();
 
-	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(readerWrapper, focal_dist, real_world_cte);
+	StereoVisionSinglePoint#(COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(builder, readerWrapper, focal_dist, real_world_cte);
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(TLog#(NUM_SAMPLES))) feed <- mkReg(0);
 	Reg#(Bit#(TLog#(NUM_SAMPLES))) check <- mkReg(0);

@@ -16,7 +16,7 @@ BSVPATH += $(DDR3_DIR) ../bluespec
 
 # Connectal Flags (1.25 MHz clock)
 CONNECTALFLAGS += -I ../easyBMP/ 
-CONNECTALFLAGS += --mainclockperiod 800 --bscflags " -u --keep-fires -u -show-schedule "
+CONNECTALFLAGS += --mainclockperiod 21 --bscflags " -u --keep-fires -u -show-schedule "
 CONNECTALFLAGS += --bscflags " -steps-max-intervals 50 +RTS -K256M -RTS"
 CONNECTALFLAGS += --cflags=-Wno-error
 #CONNECTALFLAGS += --clib " ../easyBMP/ "

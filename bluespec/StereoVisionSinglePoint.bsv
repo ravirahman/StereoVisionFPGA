@@ -38,8 +38,13 @@ typedef Server#(
 	Vector#(3, FixedPoint#(fpbi, fpbf))
 ) StereoVisionSinglePoint#(numeric type compBlockDramOffset, numeric type imageWidth, numeric type pb, numeric type searchArea, numeric type npixelst, numeric type pd, numeric type pixelWidth, numeric type fpbi, numeric type fpbf);
 
-module mkStereoVisionSinglePoint(DDR3ReaderWrapper ddr3_user, FixedPoint#(fpbi, fpbf) focal_distance, FixedPoint#(fpbi, fpbf) real_world_cte, StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc)
-	provisos(
+
+module mkStereoVisionSinglePoint(
+	DDR3ReaderWrapper ddr3_user,
+	FixedPoint#(fpbi, fpbf) focal_distance,
+	FixedPoint#(fpbi, fpbf) real_world_cte,
+	StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc
+)	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 		, Add#(c__, pb, 26)
