@@ -27,7 +27,7 @@ module mkComputeDistance(FixedPoint#(fpbi, fpbf) focalDistance, FixedPoint#(fpbi
 	rule stage0 (True);
 		let pixelDist = pixelDistances.first();
 		pixelDistances.deq();
-		$display("The input pixel distance is ", pixelDist.distance);
+		//$display("The input pixel distance is ", pixelDist.distance);
 		FixedPoint#(fpbi, fpbf) d = fromUInt(pixelDist.distance);
 		if (d == 0) begin
 			$display("!! error -- distance of 0; setting to 1!!");

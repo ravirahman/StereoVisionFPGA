@@ -38,10 +38,11 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 		rowMajorLoc = rowMajorLoc + zeroExtend(point.x);
 		DDR3_Addr dramRow = pack((rowMajorLoc >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))))) + fromInteger(valueOf(dramOffset)));  // division
 		return zeroExtend(dramRow);
+		//return bitReverse(dramRow);
 	endfunction
 
 	function XYPoint#(pb) getXYPointFromDDR3Addr(DDR3_Addr addr);
-		let locInPixelRowMajor = (unpack(addr) - fromInteger(valueOf(dramOffset))) << fromInteger(valueOf(TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))));
+		let locInPixelRowMajor = (unpack(addr) - fromInteger(valueOf(dramOffset))) << fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))));
 		XYPoint#(pb) p;
 		p.y = truncate(locInPixelRowMajor / fromInteger(valueOf(imageWidth)));
 		p.x = truncate(locInPixelRowMajor % fromInteger(valueOf(imageWidth)));
@@ -67,7 +68,7 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 		poi.x = xy.x + currentReqDx;
 		poi.y = xy.y + currentReqDy;
 		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
-		// $display("Requesting address %d for currentReqDx = %d, currentReqDy = %d, xy, poi", location, currentReqDx, currentReqDy, xy, poi);
+		//$display("Requesting address %d for currentReqDx = %d, currentReqDy = %d, x y, poi", location, currentReqDx, currentReqDy, xy.x, xy.y, poi.x, poi.y);
 		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
 		ddr3_user.request.put(req);
 		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
@@ -94,34 +95,32 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 			end
 			for (Integer i = 0; i < valueOf(NumPixelsPerLine#(pd, pixelWidth)); i = i + 1) begin
 				// do we want this pixel?
-				if (poi.x <= drampoint.x + fromInteger(i)) begin
-					if (drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst))) begin
-						if (poi.y <= drampoint.y) begin
-							if (drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
-								let startI = i * valueOf(TMul#(pd, pixelWidth));
-								let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
-								Bit#(TMul#(pd, pixelWidth)) pixelAsBytes = resp.data[endI:startI];
-								//let pixelAsBytesRev = reverseBits(pixelAsBytes);
-								//$display("The retrieved pixel is ", pixelAsBytes);
-								Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
-								let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
-								// $display("block start: ", blockStartI);
-								if (!isValid(blockReg[blockPixelI])) begin
-									if (blockStartI == 0 || isValid(blockReg[blockStartI - 1])) begin
-										//$display("keeping pixel at block %d, (%d,%d)", blockPixelI, drampoint.x + fromInteger(i), drampoint.y);
-										blockReg[blockPixelI] <= tagged Valid pixel;
-									end else begin
-										//$display("skipping because out of order. blockStartI = %d; drampoint.x= %d; poi.x = %d", blockStartI, drampoint.x, poi.x);
-									end
-								end else begin
-									//$display("skpping because already valid. blockPixelI: %d", blockPixelI);
-								end
+				if ((poi.x <= drampoint.x + fromInteger(i)) && (drampoint.x + fromInteger(i) < poi.x + fromInteger(valueOf(npixelst)))) begin
+					if ((poi.y <= drampoint.y) && (drampoint.y < poi.y + fromInteger(valueOf(npixelst)))) begin
+						//let startI = i * valueOf(TMul#(pd, pixelWidth));
+						//let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+						let endI = 511 - i * valueOf(TMul#(pd, pixelWidth));
+						let startI = endI - valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+						Bit#(TMul#(pd, pixelWidth)) pixelAsBytes = resp.data[endI:startI];
+						//let pixelAsBytesRev = reverseBits(pixelAsBytes);
+						//$display("The retrieved pixel is ", pixelAsBytes);
+						Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
+						let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
+						// $display("block start: ", blockStartI);
+						if (!isValid(blockReg[blockPixelI])) begin
+							if (blockStartI == 0 || isValid(blockReg[blockStartI - 1])) begin
+								//$display("keeping pixel at block %d, (%d,%d)", blockPixelI, drampoint.x + fromInteger(i), drampoint.y);
+								blockReg[blockPixelI] <= tagged Valid pixel;
+							end else begin
+								//$display("skipping because out of order. blockStartI = %d; drampoint.x= %d; poi.x = %d", blockStartI, drampoint.x, poi.x);
+							end
+							end else begin
+								//$display("skpping because already valid. blockPixelI: %d", blockPixelI);
 							end
 						end
 					end
 				end
-			end
-		end
+		       end
 	endrule
 
 	rule finishProcessing (areAllValid());

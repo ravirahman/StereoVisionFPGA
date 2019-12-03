@@ -92,7 +92,7 @@ module mkStereoVisionSinglePoint(
 	rule requestCompBlock if (isValid(refBlock) && loadCounter < fromInteger(valueOf(searchArea)));  // only request the comp block if we have the ref block, so we can deque comp ASAP
 		XYPoint#(pb) p = ?;
 		let xy = inFIFO.first();
-		p.x = xy.x + loadCounter;
+		p.x = xy.x - loadCounter;
 		p.y = xy.y;
 		loadCompBlock.request.put(p);
 		loadCounter <= loadCounter + 1;
@@ -127,11 +127,11 @@ module mkStereoVisionSinglePoint(
 	endrule
 
 	rule computeRealWorldDistanceRule if (compCounter == fromInteger(valueOf(searchArea)));
-		$display("computing real world distance");
+		//$display("computing real world distance");
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.response.get();  // getting also invalidates the response
 		// $display("got response");
-		$display("Best distance (svsp) is: ", bd);
+		//$display("Best distance (svsp) is: ", bd);
 		XYPointDistance#(pb) pointDistance = ?;
 		pointDistance.point = inFIFO.first();
 		pointDistance.distance = bd;

@@ -27,7 +27,7 @@ typedef 816 IMAGEWIDTH;
 typedef 16384 COMP_BLOCK_DRAM_OFFSET; 
 
 // Number of Single Points that we calculate in parallel
-typedef 1 N;
+typedef 2 N;
 
 // Constant defining the camera system (necessary to compute the real world distance from the
 // pixel distance). This constant corresponds to A = focal_distance*distance_between_cameras/pixel_pitch

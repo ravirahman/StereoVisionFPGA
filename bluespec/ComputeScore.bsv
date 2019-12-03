@@ -11,8 +11,9 @@ typedef struct {
 	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) compBlock;
 } BlockPair#(numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
-//typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
-typedef UInt#(TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
+typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
+//typedef UInt#(TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
+
 
 typedef Server#(
 	BlockPair#(npixelst, pd, pixelWidth),
@@ -31,6 +32,7 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 
 	function ScoreT#(npixelst, pd, pixelWidth) abs_diff (Pixel#(pd, pixelWidth) a, Pixel#(pd, pixelWidth) b);
 		ScoreT#(npixelst, pd, pixelWidth) df = 0;
+
 		for (Integer i = 0; i < valueOf(pd); i = i + 1) begin
 
 			if (a[i] > b[i]) begin
@@ -39,7 +41,8 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 				df = df + extend(b[i] - a[i]);
 			end
 		end
-		
+
+		//$display("Pixel difference is ", unpack(df));		
 		return df;
 	endfunction
 
@@ -47,26 +50,29 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 
 		let refB = inFIFO.first().refBlock;
 		let compB = inFIFO.first().compBlock;
-		inFIFO.deq();
-		
-		$display("--------------------------------------------");
-		$display("Reference Block");
-		for (Integer i = 0; i < valueOf(TMul#(npixelst,npixelst)); i = i+1) begin
-				for (Integer k = 0; k < valueOf(pd); k = k+1) begin
-				$display("Position (%d, %d) is %d", i, k, refB[i][k]);
-				end
-		end 
-		
-		$display("Comparison Block");
-		for (Integer i = 0; i < valueOf(TMul#(npixelst,npixelst)); i = i+1) begin
-				for (Integer k = 0; k < valueOf(pd); k = k+1) begin
-					$display("Position (%d, %d) is %d", i, k, compB[i][k]);
-				end
-		end 
+		inFIFO.deq();	
 		let score_vec = zipWith(abs_diff, refB, compB);
 		let score = fold(\+ , score_vec);
-		$display("Score is: ", score);
-		$display("--------------------------------------------");
+		//ScoreT#(npixelst, pd, pixelWidth) score = 0;
+
+		//$display("--------------------------------------------");
+		//for (Integer i = 0; i < valueOf(TMul#(npixelst,npixelst)); i = i+1) begin
+		//		/for (Integer k = 0; k < valueOf(pd); k = k+1) begin
+		//		$display("Ref Block Position (%d, %d) is %d", i, k, refB[i][k]);
+		//		$display("Comp Block Position (%d,%d) is %d", i, k, compB[i][k]);
+		//		if (refB[i][k]>compB[i][k]) begin
+		//			$display("The difference is ", refB[i][k]-compB[i][k]);
+		//		end else begin
+		//			$display("The difference is ", compB[i][k]-refB[i][k]);
+		//		end
+		//		
+		//		end
+		//		$display(score_vec[i]);
+		//		score = score + score_vec[i];
+		//		$display(score);
+		//end 
+		//$display("Score is: ", score);
+		//$display("--------------------------------------------");
 		outFIFO.enq(score);
 	endrule
 

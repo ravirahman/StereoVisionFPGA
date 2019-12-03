@@ -95,7 +95,7 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    method Action returnOutputSV (Vector#(1, Bit#(32)) xs, Vector#(1, Bit#(32)) ys, Vector#(1, Bit#(32)) zs);
+    method Action returnOutputSV (Vector#(N, Bit#(32)) xs, Vector#(N, Bit#(32)) ys, Vector#(N, Bit#(32)) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
