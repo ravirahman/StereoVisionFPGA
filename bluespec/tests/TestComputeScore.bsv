@@ -43,11 +43,13 @@ module mkTest();
     BlockT ti1_a = replicate(replicate(0));
     BlockT ti1_b = replicate(replicate(0));
     ti1_a[0][0] = 10;
-    ti1_a[1][0] = 250;
+    ti1_a[0][1] = 250;
+    ti1_a[0][2] = 250;
+    ti1_a[1][1] = 250;
     ti1_b[0][0] = 5;
-    ti1_b[1][0] = 100;
+    ti1_b[0][1] = 100;
 
-    MyScoreT to1 = 155;
+    MyScoreT to1 = 655;
 
     BlockT ti2_a = replicate(replicate(0));
     BlockT ti2_b = replicate(replicate(0));

@@ -49,7 +49,9 @@ module mkStereoVisionSinglePoint(
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
 		, Add#(c__, pb, 26)
 		, Add#(TAdd#(pb, 1), d__, fpbi)
+		, Add#(e__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst,npixelst), pd))))
 	);
+
 
 	FIFO#(Vector#(3, FixedPoint#(fpbi, fpbf))) realDistances <- mkFIFO();
 	FIFO#(XYPoint#(pb)) inFIFO <- mkFIFO();
@@ -72,14 +74,14 @@ module mkStereoVisionSinglePoint(
 	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();
 
 	rule requestRefBlock if (!refBlockRequested);
-		$display("Requesting ref block");
+		//$display("Requesting ref block");
 		let xy = inFIFO.first();
 		loadRefBlock.request.put(xy);
 		refBlockRequested <= True;
 	endrule
 
 	rule storeRefBlock;
-		$display("Receiving ref block");
+		//$display("Receiving ref block");
 		let b <- loadRefBlock.response.get();
 		// $display("Ref Block: ", b);
 		refBlock <= tagged Valid b;
@@ -114,7 +116,8 @@ module mkStereoVisionSinglePoint(
 	rule updateScoreRule if (compCounter < fromInteger(valueOf(searchArea)));
 		// $display("updating score");
 		let sc <- cs.response.get();
-		// $display("Block score is: ", sc);
+		//$display("Block score is: ", unpack(sc.score));
+		//$display("This is for a distance ", unpack(sc.distance));
 		ScoreDistanceT#(pb, npixelst, pd, pixelWidth) sd;
 		sd.score = sc;
 		sd.distance = compCounter;
@@ -128,7 +131,7 @@ module mkStereoVisionSinglePoint(
 		// If we are here, it means we have completed the search over the whole search area.
 		let bd <- us.response.get();  // getting also invalidates the response
 		// $display("got response");
-		// $display("Best distance is: ", bd);
+		$display("Best distance (svsp) is: ", bd);
 		XYPointDistance#(pb) pointDistance = ?;
 		pointDistance.point = inFIFO.first();
 		pointDistance.distance = bd;
@@ -138,7 +141,7 @@ module mkStereoVisionSinglePoint(
 	endrule
 
 	rule finishUp;
-		$display("finishing up");
+		//$display("finishing up");
 		let d <- cd.response.get();
 		// $display("Computed x is: ", fshow(d[0]));
 		// $display("Computed y is: ", fshow(d[1]));

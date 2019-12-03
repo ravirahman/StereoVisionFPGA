@@ -27,7 +27,7 @@ module mkComputeDistance(FixedPoint#(fpbi, fpbf) focalDistance, FixedPoint#(fpbi
 	rule stage0 (True);
 		let pixelDist = pixelDistances.first();
 		pixelDistances.deq();
-
+		$display("The input pixel distance is ", pixelDist.distance);
 		FixedPoint#(fpbi, fpbf) d = fromUInt(pixelDist.distance);
 		if (d == 0) begin
 			$display("!! error -- distance of 0; setting to 1!!");
@@ -40,9 +40,9 @@ module mkComputeDistance(FixedPoint#(fpbi, fpbf) focalDistance, FixedPoint#(fpbi
 
 	rule stage1 (True);
 		Tuple2#(XYPointDistance#(pb), FixedPoint#(fpbi, fpbf)) intermediate = factorFIFO.first();
+                factorFIFO.deq();
 		let pixelDist = tpl_1(intermediate);
 		let factor = tpl_2(intermediate);
-
 		FixedPoint#(fpbi, fpbf) x = fromUInt(pixelDist.point.x);
 		FixedPoint#(fpbi, fpbf) y = fromUInt(pixelDist.point.y);
 

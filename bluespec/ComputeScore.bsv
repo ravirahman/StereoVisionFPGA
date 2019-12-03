@@ -11,7 +11,8 @@ typedef struct {
 	Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) compBlock;
 } BlockPair#(numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
-typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
+//typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
+typedef UInt#(TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
 
 typedef Server#(
 	BlockPair#(npixelst, pd, pixelWidth),
@@ -20,7 +21,9 @@ typedef Server#(
 
 module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 	provisos(
-		Add#(1, a__, TMul#(npixelst, npixelst))
+		Add#(1, a__, TMul#(npixelst, npixelst)),
+    		Add#(b__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst,
+    		npixelst), pd))))
 	);
 
 	FIFO#(BlockPair#(npixelst, pd, pixelWidth)) inFIFO <- mkFIFO();
@@ -45,9 +48,25 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 		let refB = inFIFO.first().refBlock;
 		let compB = inFIFO.first().compBlock;
 		inFIFO.deq();
-
+		
+		$display("--------------------------------------------");
+		$display("Reference Block");
+		for (Integer i = 0; i < valueOf(TMul#(npixelst,npixelst)); i = i+1) begin
+				for (Integer k = 0; k < valueOf(pd); k = k+1) begin
+				$display("Position (%d, %d) is %d", i, k, refB[i][k]);
+				end
+		end 
+		
+		$display("Comparison Block");
+		for (Integer i = 0; i < valueOf(TMul#(npixelst,npixelst)); i = i+1) begin
+				for (Integer k = 0; k < valueOf(pd); k = k+1) begin
+					$display("Position (%d, %d) is %d", i, k, compB[i][k]);
+				end
+		end 
 		let score_vec = zipWith(abs_diff, refB, compB);
 		let score = fold(\+ , score_vec);
+		$display("Score is: ", score);
+		$display("--------------------------------------------");
 		outFIFO.enq(score);
 	endrule
 

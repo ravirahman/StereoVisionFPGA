@@ -95,7 +95,7 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    method Action returnOutputSV (Vector#(2, Bit#(32)) xs, Vector#(2, Bit#(32)) ys, Vector#(2, Bit#(32)) zs);
+    method Action returnOutputSV (Vector#(1, Bit#(32)) xs, Vector#(1, Bit#(32)) ys, Vector#(1, Bit#(32)) zs);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
@@ -190,6 +190,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     interface MyDutRequest request;
         method Action loadDRAM (Bit#(32) line_addr, Vector#(16, Bit#(32)) line_data) if (!isResetting);
             // write request (no response)
+	    //$display("The line data being loaded into DRAM is ", pack(line_data));
             let req = DDR3_LineReq{ write: True, line_addr: truncate(line_addr), data_in: pack(line_data)};
             ddr3_user.request.put(req);
         endmethod
@@ -213,7 +214,7 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
 		    Bit#(PB) x = truncate(pack(xs[i]));
 		    Bit#(PB) y = truncate(pack(ys[i]));
 	            XYPoint#(PB) pt = mkXYPoint(unpack(x),unpack(y));
-                points_vec[i] = pt;
+                    points_vec[i] = pt;
 	        end
 	    
 	        svmp.request.put(points_vec);

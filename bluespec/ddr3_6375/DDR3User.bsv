@@ -24,6 +24,7 @@ typedef Server#(DDR3_LineReq, DDR3_Line) DDR3_6375User;
 module mkDDR3WrapperSim#(DDR3_User_VC707_1GB ddr_usr) (DDR3_6375User);
     interface Put request;
         method Action put(DDR3_LineReq req);
+	    //$display("Data being loadded into DRAM", req.data_in);	
             ddr_usr.request({req.line_addr, 3'b0}, (req.write)?-1:0, req.data_in); 
         endmethod
     endinterface

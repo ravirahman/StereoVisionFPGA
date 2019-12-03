@@ -100,19 +100,21 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 							if (drampoint.y < poi.y + fromInteger(valueOf(npixelst))) begin
 								let startI = i * valueOf(TMul#(pd, pixelWidth));
 								let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
-								let pixelAsBytes = resp.data[endI:startI];
+								Bit#(TMul#(pd, pixelWidth)) pixelAsBytes = resp.data[endI:startI];
+								//let pixelAsBytesRev = reverseBits(pixelAsBytes);
+								//$display("The retrieved pixel is ", pixelAsBytes);
 								Pixel#(pd, pixelWidth) pixel = unpack(pixelAsBytes);
 								let blockPixelI = (drampoint.y - poi.y) * fromInteger(valueOf(npixelst)) + (drampoint.x + fromInteger(i) - poi.x);
 								// $display("block start: ", blockStartI);
 								if (!isValid(blockReg[blockPixelI])) begin
 									if (blockStartI == 0 || isValid(blockReg[blockStartI - 1])) begin
-										$display("keeping pixel at block %d, (%d,%d)", blockPixelI, drampoint.x + fromInteger(i), drampoint.y);
+										//$display("keeping pixel at block %d, (%d,%d)", blockPixelI, drampoint.x + fromInteger(i), drampoint.y);
 										blockReg[blockPixelI] <= tagged Valid pixel;
 									end else begin
-										$display("skipping because out of order. blockStartI = %d; drampoint.x= %d; poi.x = %d", blockStartI, drampoint.x, poi.x);
+										//$display("skipping because out of order. blockStartI = %d; drampoint.x= %d; poi.x = %d", blockStartI, drampoint.x, poi.x);
 									end
 								end else begin
-									$display("skpping because already valid. blockPixelI: %d", blockPixelI);
+									//$display("skpping because already valid. blockPixelI: %d", blockPixelI);
 								end
 							end
 						end
@@ -123,7 +125,7 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 	endrule
 
 	rule finishProcessing (areAllValid());
-		$display("Finishing and returning");
+		//$display("Finishing and returning");
 		Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)) answer;
 		for (Integer i = 0; i < valueOf(TMul#(npixelst, npixelst)); i = i + 1) begin
 			answer[i] = fromMaybe(replicate(0), blockReg[i]);

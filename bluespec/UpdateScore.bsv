@@ -26,7 +26,8 @@ module mkUpdateScore(UpdateScore#(pb, npixelst, pd, pixelWidth));
 		method Action put(ScoreDistanceT#(pb, npixelst, pd, pixelWidth) scoreDistance);
 			let score = scoreDistance.score;
 			let distance = scoreDistance.distance;
-
+			$display("The score is ", score);
+			$display("For distance ", distance);
 			if (isValid(bestScore)) begin
 				if (fromMaybe(?, bestScore) > score) begin
 					bestScore <= tagged Valid score;
