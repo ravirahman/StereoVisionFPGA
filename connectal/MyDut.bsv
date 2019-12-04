@@ -19,6 +19,7 @@ import UpdateScore::*;
 import LoadBlocks::*;
 import ComputeScore::*;
 import ComputeDistance::*;
+import Synth::*;
 
 // Connectal
 import Top_Pins::*;
@@ -155,7 +156,8 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     /////////////////////////
     
     //StereoVisionSinglePoint#(IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svsp <- mkStereoVisionSinglePoint(readerWrapper, real_world_cte);
-    StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(readerWrapper, focal_dist, real_world_cte);
+    // StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(readerWrapper, focal_dist, real_world_cte);
+    SynthStereoVisionMultiplePoints svmp <- mkSynthStereoVisionMultiplePoints(readerWrapper);
 
 
     // SW and HW methods

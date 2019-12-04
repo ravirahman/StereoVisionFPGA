@@ -38,7 +38,6 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 		rowMajorLoc = rowMajorLoc + zeroExtend(point.x);
 		DDR3_Addr dramRow = pack((rowMajorLoc >> fromInteger(valueOf(TLog#(NumPixelsPerLine#(pd, pixelWidth))))) + fromInteger(valueOf(dramOffset)));  // division
 		return zeroExtend(dramRow);
-		//return bitReverse(dramRow);
 	endfunction
 
 	function XYPoint#(pb) getXYPointFromDDR3Addr(DDR3_Addr addr);
@@ -68,7 +67,7 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 		poi.x = xy.x + currentReqDx;
 		poi.y = xy.y + currentReqDy;
 		DDR3_Addr location = getDDR3AddrFromXYPoint(poi);
-		//$display("Requesting address %d for currentReqDx = %d, currentReqDy = %d, x y, poi", location, currentReqDx, currentReqDy, xy.x, xy.y, poi.x, poi.y);
+		// $display("Requesting address %d for currentReqDx = %d, currentReqDy = %d, x y, poi", location, currentReqDx, currentReqDy, xy.x, xy.y, poi.x, poi.y);
 		let req = DDR3_LineReq{ write: False, line_addr: truncate(location), data_in: 0};
 		ddr3_user.request.put(req);
 		if (currentReqDx + 1 < fromInteger(valueOf(npixelst))) begin
@@ -99,8 +98,12 @@ module mkLoadBlocks(DDR3ReaderWrapper ddr3_user, LoadBlocks#(dramOffset, imageWi
 					if ((poi.y <= drampoint.y) && (drampoint.y < poi.y + fromInteger(valueOf(npixelst)))) begin
 						//let startI = i * valueOf(TMul#(pd, pixelWidth));
 						//let endI = startI + valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+						// $display("endIOffset is", i * valueOf(TMul#(pd, pixelWidth)));
 						let endI = 511 - i * valueOf(TMul#(pd, pixelWidth));
+						// $display("endI is", endI);
+						// $display("startIoffset is ", valueOf(TSub#(TMul#(pd, pixelWidth), 1)));
 						let startI = endI - valueOf(TSub#(TMul#(pd, pixelWidth), 1));
+						// $display("startI is ", startI);
 						Bit#(TMul#(pd, pixelWidth)) pixelAsBytes = resp.data[endI:startI];
 						//let pixelAsBytesRev = reverseBits(pixelAsBytes);
 						//$display("The retrieved pixel is ", pixelAsBytes);

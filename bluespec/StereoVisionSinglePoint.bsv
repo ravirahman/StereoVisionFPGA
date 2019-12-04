@@ -44,6 +44,36 @@ module mkStereoVisionSinglePoint(
 	FixedPoint#(fpbi, fpbf) focal_distance,
 	FixedPoint#(fpbi, fpbf) real_world_cte,
 	StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc
+) provisos(
+	Add#(1, a__, TMul#(npixelst, npixelst))
+	, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
+	, Add#(c__, pb, 26)
+	, Add#(TAdd#(pb, 1), d__, fpbi)
+	, Add#(e__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst,npixelst), pd))))
+);
+	// Modules that make the different operations
+	LoadBlocks#(0,                   imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
+	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
+	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
+	ComputeDistance#(pb, searchArea, npixelst, fpbi, fpbf) cd <- mkComputeDistance(focal_distance, real_world_cte);
+	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();
+	StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) x <- mkStereoVisionSinglePointInternal(
+		loadRefBlock,
+		loadCompBlock,
+		cs,
+		cd,
+		us);
+	return x;
+endmodule
+
+
+module mkStereoVisionSinglePointInternal(
+	LoadBlocks#(0,                   imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock,
+	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock,
+	ComputeScore#(npixelst, pd, pixelWidth) cs,
+	ComputeDistance#(pb, searchArea, npixelst, fpbi, fpbf) cd,
+	UpdateScore#(pb, npixelst, pd, pixelWidth) us,
+	StereoVisionSinglePoint#(compBlockDramOffset, imageWidth, pb, searchArea, npixelst, pd, pixelWidth, fpbi, fpbf) ifc
 )	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst))
 		, Add#(b__, pb, TAdd#(DDR3_Addr_Size, TLog#(TDiv#(DDR3_Line_Size, TMul#(pd, pixelWidth)))))
@@ -51,7 +81,6 @@ module mkStereoVisionSinglePoint(
 		, Add#(TAdd#(pb, 1), d__, fpbi)
 		, Add#(e__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst,npixelst), pd))))
 	);
-
 
 	FIFO#(Vector#(3, FixedPoint#(fpbi, fpbf))) realDistances <- mkFIFO();
 	FIFO#(XYPoint#(pb)) inFIFO <- mkFIFO();
@@ -66,12 +95,6 @@ module mkStereoVisionSinglePoint(
 	// Register to hold the reference block
 	Reg#(Maybe#(Vector#(TMul#(npixelst, npixelst), Pixel#(pd, pixelWidth)))) refBlock <- mkReg(tagged Invalid);
 
-	// Modules that make the different operations
-	LoadBlocks#(0,                   imageWidth, pb, npixelst, pd, pixelWidth) loadRefBlock <- mkLoadBlocks(ddr3_user);
-	LoadBlocks#(compBlockDramOffset, imageWidth, pb, npixelst, pd, pixelWidth) loadCompBlock <- mkLoadBlocks(ddr3_user);
-	ComputeScore#(npixelst, pd, pixelWidth) cs <- mkComputeScore();
-	ComputeDistance#(pb, fpbi, fpbf) cd <- mkComputeDistance(focal_distance, real_world_cte);
-	UpdateScore#(pb, npixelst, pd, pixelWidth) us <- mkUpdateScore();
 
 	rule requestRefBlock if (!refBlockRequested);
 		//$display("Requesting ref block");
@@ -92,9 +115,14 @@ module mkStereoVisionSinglePoint(
 	rule requestCompBlock if (isValid(refBlock) && loadCounter < fromInteger(valueOf(searchArea)));  // only request the comp block if we have the ref block, so we can deque comp ASAP
 		XYPoint#(pb) p = ?;
 		let xy = inFIFO.first();
-		p.x = xy.x - loadCounter;
-		p.y = xy.y;
-		loadCompBlock.request.put(p);
+		if (loadCounter > xy.x) begin
+			$display("Requesting block for negative position. loadCounter is %d; xy.x is %d", loadCounter, xy.x);
+			compCounter <= compCounter+1;  // bypassing all of the computeScore / updateScore logic
+		end else begin
+			p.x = xy.x - loadCounter;
+			p.y = xy.y;
+			loadCompBlock.request.put(p);
+		end
 		loadCounter <= loadCounter + 1;
 		// $display("Comp Block Counter is: ", loadCounter);
 	endrule

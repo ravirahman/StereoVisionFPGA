@@ -12,8 +12,6 @@ typedef struct {
 } BlockPair#(numeric type npixelst, numeric type pd, numeric type pixelWidth) deriving(Bits, Eq);
 
 typedef UInt#(TAdd#(pixelWidth, TLog#(TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
-//typedef UInt#(TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst, npixelst), pd)))) ScoreT#(numeric type npixelst, numeric type pd, numeric type pixelWidth);
-
 
 typedef Server#(
 	BlockPair#(npixelst, pd, pixelWidth),
@@ -23,8 +21,7 @@ typedef Server#(
 module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 	provisos(
 		Add#(1, a__, TMul#(npixelst, npixelst)),
-    		Add#(b__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst,
-    		npixelst), pd))))
+		Add#(b__, pixelWidth, TLog#(TMul#(pixelWidth, TMul#(TMul#(npixelst, npixelst), pd))))
 	);
 
 	FIFO#(BlockPair#(npixelst, pd, pixelWidth)) inFIFO <- mkFIFO();
@@ -32,7 +29,6 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 
 	function ScoreT#(npixelst, pd, pixelWidth) abs_diff (Pixel#(pd, pixelWidth) a, Pixel#(pd, pixelWidth) b);
 		ScoreT#(npixelst, pd, pixelWidth) df = 0;
-
 		for (Integer i = 0; i < valueOf(pd); i = i + 1) begin
 
 			if (a[i] > b[i]) begin
@@ -41,7 +37,6 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 				df = df + extend(b[i] - a[i]);
 			end
 		end
-
 		//$display("Pixel difference is ", unpack(df));		
 		return df;
 	endfunction
@@ -50,7 +45,8 @@ module mkComputeScore(ComputeScore#(npixelst, pd, pixelWidth))
 
 		let refB = inFIFO.first().refBlock;
 		let compB = inFIFO.first().compBlock;
-		inFIFO.deq();	
+		inFIFO.deq();
+
 		let score_vec = zipWith(abs_diff, refB, compB);
 		let score = fold(\+ , score_vec);
 		//ScoreT#(npixelst, pd, pixelWidth) score = 0;

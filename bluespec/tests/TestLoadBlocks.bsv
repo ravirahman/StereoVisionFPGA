@@ -21,7 +21,7 @@ interface Top_Pins;
 endinterface
 
 typedef Vector#(TMul#(NPIXELS, NPIXELS), Pixel#(PD, PIXELWIDTH)) Block;
-typedef 100 NUM_SAMPLES;
+typedef 3 NUM_SAMPLES;
 
 module mkTest();
     let ddr3_ctrl <- mkDDR3Simulator;
@@ -85,7 +85,7 @@ module mkTest();
             $display("Loading memory");
         end
         
-        if (nextBlockToLoad == 128) begin
+        if (nextBlockToLoad == 256) begin
             $display("Finished loading memory");
             feed <= feed + 1;
             check <= check + 1;  // nothing to check here

@@ -11,7 +11,7 @@ import XYPoint::*;
 
 module mkTest();
 
-	ComputeDistance#(PB, FPBI, FPBF) cd <- mkComputeDistance(focal_dist, real_world_cte);
+	ComputeDistance#(PB, SEARCHAREA, NPIXELS, FPBI, FPBF) cd <- mkComputeDistance(focal_dist, real_world_cte);
 
 	Reg#(Bool) passed <- mkReg(True);
 	Reg#(Bit#(4)) feed <- mkReg(0);
