@@ -2,6 +2,7 @@
 #include <vector>
 #include <arpa/inet.h>
 #include "EasyBMP.h"
+#include <time.h>
 //#include <fixed_point/fixed_point.hpp>
 
 //#include "types.hpp"
@@ -44,7 +45,7 @@ public:
     //    num_req_sent--;
     //    pthread_mutex_unlock(&lock);
     //}
-    virtual void returnOutputSV(const bsvvector_Luint32_t_L2 xs, const bsvvector_Luint32_t_L2 ys, const bsvvector_Luint32_t_L2 zs) {
+    virtual void returnOutputSV(const bsvvector_Luint32_t_L2 xs, const bsvvector_Luint32_t_L2 ys, const bsvvector_Luint32_t_L2 zs, uint32_t counts) {
         //printf("Response: [Line Data (512bit): 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx]\n"
         //        , data.data7, data.data6, data.data5, data.data4, data.data3, data.data2, data.data1, data.data0);
          
@@ -69,6 +70,7 @@ public:
 	
         printf("(X,Y,Z) distance of point 1 is (%d.%d, %d.%d, %d.%d) \n", integer_x1, fractional_x1, integer_y1, fractional_y1, integer_z1, fractional_z1);
         printf("(X,Y,Z) distance of point 2 is (%d.%d, %d.%d, %d.%d) \n", integer_x2, fractional_x2, integer_y2, fractional_y2, integer_z2, fractional_z2);
+	printf("The elapsed number of cycles is %d \n", counts);
 	//printf("Z received in connectal is:");
 	//std::cout << std::bitset<32>(zs[0]);
 	//printf("Distances Received\n");
@@ -185,6 +187,12 @@ void run_test_bench(){
 
     // The very first thing is loading the images into the FPGA memory
     load_images();
+	
+    // Measure how long it takes after the images have been loaded
+    timespec start;
+    timespec end;
+
+    clock_gettime(CLOCK_REALTIME, &start);
 
     // Once the images are loaded, we just need to request the points
     request_points();   
@@ -198,9 +206,14 @@ void run_test_bench(){
         pthread_mutex_lock(&lock);
     }
     pthread_mutex_unlock(&lock);
-
+    
     pthread_mutex_destroy(&lock);
-    printf("run_test_bench finished!\n");
+    
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double time_in_sec = end.tv_sec - start.tv_sec;
+    time_in_sec += ((double)(end.tv_nsec-start.tv_nsec)/100000000L);
+    printf("run_test_bench finished in %.9f sec!\n", time_in_sec);
 
 }
 

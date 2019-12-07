@@ -96,7 +96,7 @@ endinterface
 // interface used by hardware to send a message back to software
 interface MyDutIndication;
     //method Action returnOutputDDR (DRAM_Line resp);
-    method Action returnOutputSV (Vector#(N, Bit#(32)) xs, Vector#(N, Bit#(32)) ys, Vector#(N, Bit#(32)) zs);
+    method Action returnOutputSV (Vector#(N, Bit#(32)) xs, Vector#(N, Bit#(32)) ys, Vector#(N, Bit#(32)) zs, Bit#(32) elapsed_cycles);
 endinterface
 
 // interface of the connectal wrapper (mkMyDut) of your design
@@ -159,6 +159,10 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
     // StereoVisionMultiplePoints#(N, COMP_BLOCK_DRAM_OFFSET, IMAGEWIDTH, PB, SEARCHAREA, NPIXELS, PD, PIXELWIDTH, FPBI, FPBF) svmp <- mkStereoVisionMultiplePoints(readerWrapper, focal_dist, real_world_cte);
     SynthStereoVisionMultiplePoints svmp <- mkSynthStereoVisionMultiplePoints(readerWrapper);
 
+    // Register and flags to count the number of cycles we need.
+    Reg#(Bit#(32)) cycle_counter <- mkReg(0);
+    Reg#(Bool) count <- mkReg(False);
+
 
     // SW and HW methods
 
@@ -183,9 +187,15 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
             //$display("Z from bluespec is: ", pack(pt[2]));
         end
 	    //let a = Dist_List{real_xs: xs, real_ys: ys, real_zs: zs};
-        indication.returnOutputSV(xs, ys, zs); 
+        indication.returnOutputSV(xs, ys, zs, cycle_counter); 
+        $display("The number of cycles it took for all the requested points was: ", cycle_counter);
+        count <= False;
         //indication.returnOutputSV(xs); 
         //indication.returnOutputSV(xs[0]); 
+    endrule
+
+    rule count_cycles (count == True);
+        cycle_counter <= cycle_counter + 1;
     endrule
     
     // Interface used by software (MyDutRequest)
@@ -220,6 +230,11 @@ module mkMyDut#(HostInterface host, MyDutIndication indication) (MyDut); // Host
 	        end
 	    
 	        svmp.request.put(points_vec);
+
+                // Restart the counter and count
+                count <= True;
+                cycle_counter <=0;
+
         endmethod
     endinterface
 
