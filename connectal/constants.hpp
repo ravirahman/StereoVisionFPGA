@@ -7,4 +7,4 @@ const size_t COMP_BLOCK_DRAM_OFFSET = 16384;
 const size_t IMAGEWIDTH = 816;
 const size_t NPIXELS = 5;
 
-const uint16_t N = 4; // Number of single points in parallel
+const uint16_t N = 2; // Number of single points in parallel

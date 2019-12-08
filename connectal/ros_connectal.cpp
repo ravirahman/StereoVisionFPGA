@@ -20,8 +20,8 @@ size_t gotcount = 0;
 #include "constants.hpp"
 #include "ros_listener.hpp"
 
-typedef bsvvector_Luint32_t_L4 return_data_type_t;
-typedef bsvvector_Luint16_t_L4 send_data_type_t;
+typedef bsvvector_Luint32_t_L2 return_data_type_t;
+typedef bsvvector_Luint16_t_L2 send_data_type_t;
 
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW
