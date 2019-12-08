@@ -19,11 +19,8 @@ static MyDutRequestProxy *device = 0;
 
 size_t putcount = 0;
 size_t gotcount = 0;
-const size_t NUM_PIXELS_PER_DRAM_LINE = 16;
-const size_t COMP_BLOCK_DRAM_OFFSET = 16384;
-const size_t IMAGEWIDTH = 816;
 
-const uint16_t N = 3; // Number of single points in parallel
+#include "constants.hpp"
 
 // You need a lock when variables are shared by multiple threads:
 // (1) the thread that sends request to HW and (2) another thread that processes indications from HW

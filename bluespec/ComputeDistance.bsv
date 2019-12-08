@@ -9,6 +9,8 @@ import XYPointDistance::*;
 import XYPoint::*;
 import Vector::*;
 
+typedef 320 IMAGEHEIGHT;
+
 typedef Server#(
 	XYPointDistance#(pb),
 	Vector#(3, FixedPoint#(fpbi, fpbf))
@@ -37,7 +39,8 @@ module mkComputeDistance(FixedPoint#(fpbi, fpbf) focalDistance, FixedPoint#(fpbi
 		// $display("The input pixel distance is ", pixelDist.distance);
 		FixedPoint#(fpbi, fpbf) factor = factors[pixelDist.distance];
 		FixedPoint#(fpbi, fpbf) x = fromUInt(pixelDist.point.x);
-		FixedPoint#(fpbi, fpbf) y = fromUInt(pixelDist.point.y);
+		UInt#(pb) realY = fromInteger(valueOf(IMAGEHEIGHT)) - pixelDist.point.y;
+		FixedPoint#(fpbi, fpbf) y = fromUInt(realY);
 
 		Vector#(3, FixedPoint#(fpbi, fpbf)) ans = ?;
 		// $display("distance of ", d);

@@ -9,7 +9,12 @@ H2S_INTERFACES = MyDut:MyDutIndication:host
 
 # FILES
 BSVFILES = Top_Pins.bsv MyDut.bsv ../bluespec/Types.bsv
-CPPFILES = connectal_test.cpp 
+
+ifeq ($(ROS), 1)
+	CPPFILES = ros_connectal.cpp
+else
+	CPPFILES = connectal_test.cpp
+endif
 
 # add BSV directories other than the current directory (space between entries)
 BSVPATH += $(DDR3_DIR) ../bluespec
@@ -21,8 +26,11 @@ CONNECTALFLAGS += --bscflags " -steps-max-intervals 50 +RTS -K256M -RTS"
 CONNECTALFLAGS += --cflags=-Wno-error
 #CONNECTALFLAGS += --clib " ../easyBMP/ "
 
+ROSFLAGS = -I/opt/ros/kinetic/include/ -I./ -L/opt/ros/kinetic/lib/ -lroscpp -lroslib -lrosconsole -lroscpp_serialization -lxmlrpcpp \
+	-lrostime -lcpp_common -lboost_system -lrosconsole_log4cxx -lrosconsole_backend_interface -lmessage_filters
+
 # Additional Connectal Flags for DRAM pins & clocks
-CONNECTALFLAGS += -D IMPORT_HOSTIF -D XILINX_SYS_CLK
+CONNECTALFLAGS += -D IMPORT_HOSTIF -D XILINX_SYS_CLK $(ROSFLAGS)
 PIN_TYPE = Top_Pins
 PIN_TYPE_INCLUDE = Top_Pins
 AUTOTOP = --interface pins:MyDut.pins
@@ -36,7 +44,10 @@ endif
 
 include $(CONNECTALDIR)/Makefile.connectal
 
-.PHONY: simulation fpga fpgaUpdateSW run_simulation run_fpga program_fpga run_fpgaSW compile_bluespec clean
+.PHONY: simulation fpga fpgaUpdateSW run_simulation run_fpga program_fpga run_fpgaSW compile_bluespec clean ros_listener
+
+ros_listener: ros_listener.cpp
+	g++ -std=c++11 -g -o ros ros_listener.cpp $(ROSFLAGS)
 
 simulation:
 	rm -rf $(BASEDIR)/bluesim

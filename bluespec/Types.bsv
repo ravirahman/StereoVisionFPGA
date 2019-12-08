@@ -27,13 +27,13 @@ typedef 816 IMAGEWIDTH;
 typedef 16384 COMP_BLOCK_DRAM_OFFSET; 
 
 // Number of Single Points that we calculate in parallel
-typedef 2 N;
+typedef 20 N;
 
 // Constant defining the camera system (necessary to compute the real world distance from the
 // pixel distance). This constant corresponds to A = focal_distance*distance_between_cameras/pixel_pitch
 // In our case, f = 12e-3m , distance_cameras = 100e-3m , pixel_pitch = 8.93e-6m
-FixedPoint#(FPBI, FPBF) real_world_cte = 134.3875;
-FixedPoint#(FPBI, FPBF) focal_dist = 1.0;
+FixedPoint#(FPBI, FPBF) real_world_cte = 0.0508;
+FixedPoint#(FPBI, FPBF) focal_dist = 1262.6;
 
 // Search area in pixels
 typedef 50 SEARCHAREA;

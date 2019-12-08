@@ -7,7 +7,9 @@
                 "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal",
                 "/afs/athena.mit.edu/course/6/6.375/lab2019f/connectal/lib",
                 "${workspaceFolder}/fixed_point/include",
-                "${workspaceFolder}/easyBMP"
+                "${workspaceFolder}/easyBMP",
+                "/opt/ros/kinetic/include",
+                "${workspaceFolder}/connectal"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
